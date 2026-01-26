@@ -2,7 +2,7 @@ from agents import Agent, Runner
 
 agent = Agent(name="Assistant", instructions="You are a helpful assistant")
 
-result = Runner.run_sync(agent, "Who is Big H in WW2?")
+result = Runner.run_sync(agent, "What is the capital of France?")
 print(result.final_output)
 
 # Code within the code,
