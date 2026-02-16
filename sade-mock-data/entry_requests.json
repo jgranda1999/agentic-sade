@@ -1,0 +1,55 @@
+[
+  {
+    "sade_zone_id": "ZONE-001",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-ABC",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T10:00:00Z",
+    "request": ["ZONE"]
+  },
+  {
+    "sade_zone_id": "ZONE-002",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-DEF",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T14:30:00Z",
+    "request": ["REGION", "ZONE_CEILING", "GROUND"]
+  },
+  {
+    "sade_zone_id": "ZONE-003",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-GHI",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T16:00:00Z",
+    "request": ["REGION", "300m", "250m"]
+  },
+  {
+    "sade_zone_id": "ZONE-004",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-JKL",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T18:00:00Z",
+    "request": [
+      "ROUTE",
+      [37.7749, -122.4194, 100],
+      [37.7849, -122.4294, 120],
+      [37.7949, -122.4394, 110],
+      [37.8049, -122.4494, 100]
+    ]
+  },
+  {
+    "sade_zone_id": "ZONE-005",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-MNO",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-03T09:00:00Z",
+    "request": [
+      "ROUTE",
+      [40.7128, -74.0060, 150],
+      [40.7228, -74.0160, 180],
+      [40.7328, -74.0260, 200],
+      [40.7428, -74.0360, 180],
+      [40.7528, -74.0460, 150]
+    ]
+  }
+]

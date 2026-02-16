@@ -38,10 +38,12 @@ class RiskAssessment(BaseModel):
 
 
 class EnvironmentAgentOutput(BaseModel):
-    """Output from Environment Agent."""
+    """Output from Environment Agent (v2: includes recommendation, why for orchestrator)."""
     raw_conditions: RawConditions
     risk_assessment: RiskAssessment
     constraint_suggestions: List[str] = Field(default_factory=list)
+    recommendation: Literal["LOW", "MEDIUM", "HIGH", "UNKNOWN"] = "UNKNOWN"
+    why: List[str] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -88,10 +90,17 @@ class ReputationRiskAssessment(BaseModel):
 
 
 class ReputationAgentOutput(BaseModel):
-    """Output from Reputation Agent."""
+    """Output from Reputation Agent (v2: includes orchestration fields for orchestrator)."""
     reputation_summary: ReputationSummary
     incident_analysis: IncidentAnalysis
     risk_assessment: ReputationRiskAssessment
+    drp_sessions_count: int = 0
+    demo_steady_max_kt: float = 0.0
+    demo_gust_max_kt: float = 0.0
+    incident_codes: List[str] = Field(default_factory=list)
+    n_0100_0101: int = 0
+    recommendation: Literal["LOW", "MEDIUM", "HIGH", "UNKNOWN"] = "UNKNOWN"
+    why: List[str] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -188,3 +197,17 @@ class ActionRequiredAgentOutput(BaseModel):
     satisfied: bool
     attestation: Optional[EvidenceAttestation] = None
     error: Optional[str] = None
+
+
+# ============================================================================
+# Claims Agent Models (v2 — required_actions verification)
+# ============================================================================
+
+class ClaimsAgentOutput(BaseModel):
+    """Output from Claims Agent. Verifies required_actions against DPO claims/follow-ups."""
+    satisfied: bool
+    resolved_incident_prefixes: List[str] = Field(default_factory=list)
+    unresolved_incident_prefixes: List[str] = Field(default_factory=list)
+    satisfied_actions: List[str] = Field(default_factory=list)
+    unsatisfied_actions: List[str] = Field(default_factory=list)
+    why: List[str] = Field(default_factory=list)

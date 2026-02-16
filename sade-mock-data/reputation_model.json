@@ -1,0 +1,821 @@
+[
+  {
+    "encoding": "01",
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-001",
+    "wind_steady_kt": "02",
+    "wind_gusts_kt": "05",
+    "precipitation": "000",
+    "visibility_nm": "10",
+    "max_temperature_f": 75,
+    "min_temperature_f": 73,
+    "time_in": "2024-10-15T10:00:00Z",
+    "time_out": "2024-10-15T10:45:00Z",
+    "flight": {
+      "max_alt_asl_m": 1500,
+      "distance_flown_mi": 1.8
+    },
+    "payload": {
+      "total_weight_kg": 1.2,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.8,
+        "B": 24.6
+      },
+      "voltage_out": {
+        "A": 23.9,
+        "B": 24.0
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "660e8400-e29b-41d4-a716-446655440001",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-002",
+    "wind_steady_kt": "05",
+    "wind_gusts_kt": "08",
+    "precipitation": "000",
+    "visibility_nm": "08",
+    "max_temperature_f": 72,
+    "min_temperature_f": 70,
+    "time_in": "2024-11-08T14:30:00Z",
+    "time_out": "2024-11-08T15:20:00Z",
+    "flight": {
+      "max_alt_asl_m": 1800,
+      "distance_flown_mi": 2.5
+    },
+    "payload": {
+      "total_weight_kg": 1.5,
+      "camera": "11",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.0,
+        "B": 24.9
+      },
+      "voltage_out": {
+        "A": 23.5,
+        "B": 23.6
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "880e8400-e29b-41d4-a716-446655440003",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-004",
+    "wind_steady_kt": "12",
+    "wind_gusts_kt": "18",
+    "precipitation": "000",
+    "visibility_nm": "06",
+    "max_temperature_f": 75,
+    "min_temperature_f": 73,
+    "time_in": "2025-01-12T18:00:00Z",
+    "time_out": "2025-01-12T18:50:00Z",
+    "flight": {
+      "max_alt_asl_m": 2000,
+      "distance_flown_mi": 3.2
+    },
+    "payload": {
+      "total_weight_kg": 1.8,
+      "camera": "10",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.1,
+        "B": 25.0
+      },
+      "voltage_out": {
+        "A": 23.2,
+        "B": 23.3
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0101-100"],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "990e8400-e29b-41d4-a716-446655440004",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-005",
+    "wind_steady_kt": "15",
+    "wind_gusts_kt": "22",
+    "precipitation": "000",
+    "visibility_nm": "05",
+    "max_temperature_f": 70,
+    "min_temperature_f": 68,
+    "time_in": "2025-02-20T09:00:00Z",
+    "time_out": "2025-02-20T09:40:00Z",
+    "flight": {
+      "max_alt_asl_m": 1650,
+      "distance_flown_mi": 2.1
+    },
+    "payload": {
+      "total_weight_kg": 1.3,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.9,
+        "B": 24.8
+      },
+      "voltage_out": {
+        "A": 23.8,
+        "B": 23.9
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "1001000030"
+  },
+  {
+    "encoding": "01",
+    "session_id": "aa0e8400-e29b-41d4-a716-446655440005",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-001",
+    "wind_steady_kt": "18",
+    "wind_gusts_kt": "25",
+    "precipitation": "000",
+    "visibility_nm": "04",
+    "max_temperature_f": 68,
+    "min_temperature_f": 66,
+    "time_in": "2025-03-14T11:00:00Z",
+    "time_out": "2025-03-14T11:30:00Z",
+    "flight": {
+      "max_alt_asl_m": 1400,
+      "distance_flown_mi": 1.5
+    },
+    "payload": {
+      "total_weight_kg": 1.1,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.6,
+        "B": 24.4
+      },
+      "voltage_out": {
+        "A": 24.0,
+        "B": 24.1
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0011-010"],
+    "entry_decision": "1000100008"
+  },
+  {
+    "encoding": "01",
+    "session_id": "bb0e8400-e29b-41d4-a716-446655440006",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-002",
+    "wind_steady_kt": "20",
+    "wind_gusts_kt": "28",
+    "precipitation": "000",
+    "visibility_nm": "03",
+    "max_temperature_f": 65,
+    "min_temperature_f": 63,
+    "time_in": "2025-04-22T13:15:00Z",
+    "time_out": "2025-04-22T13:55:00Z",
+    "flight": {
+      "max_alt_asl_m": 1100,
+      "distance_flown_mi": 0.9
+    },
+    "payload": {
+      "total_weight_kg": 0.8,
+      "camera": "00",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.5,
+        "B": 24.3
+      },
+      "voltage_out": {
+        "A": 23.7,
+        "B": 23.8
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0011-010"],
+    "entry_decision": "1001000030"
+  },
+  {
+    "encoding": "01",
+    "session_id": "cc0e8400-e29b-41d4-a716-446655440007",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-003",
+    "wind_steady_kt": "22",
+    "wind_gusts_kt": "30",
+    "precipitation": "000",
+    "visibility_nm": "02",
+    "max_temperature_f": 64,
+    "min_temperature_f": 62,
+    "time_in": "2025-05-07T15:30:00Z",
+    "time_out": "2025-05-07T16:15:00Z",
+    "flight": {
+      "max_alt_asl_m": 1900,
+      "distance_flown_mi": 2.8
+    },
+    "payload": {
+      "total_weight_kg": 1.6,
+      "camera": "11",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.2,
+        "B": 25.1
+      },
+      "voltage_out": {
+        "A": 23.1,
+        "B": 23.2
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0100-100"],
+    "entry_decision": "1000100008"
+  },
+  {
+    "encoding": "01",
+    "session_id": "dd0e8400-e29b-41d4-a716-446655440008",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-004",
+    "wind_steady_kt": "25",
+    "wind_gusts_kt": "35",
+    "precipitation": "000",
+    "visibility_nm": "01",
+    "max_temperature_f": 62,
+    "min_temperature_f": 60,
+    "time_in": "2025-06-18T08:00:00Z",
+    "time_out": "2025-06-18T08:25:00Z",
+    "flight": {
+      "max_alt_asl_m": 1300,
+      "distance_flown_mi": 1.0
+    },
+    "payload": {
+      "total_weight_kg": 1.0,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.8,
+        "B": 24.7
+      },
+      "voltage_out": {
+        "A": 24.2,
+        "B": 24.3
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0101-100"],
+    "entry_decision": "1000100008"
+  },
+  {
+    "encoding": "01",
+    "session_id": "550e8400-e29b-41d4-a716-446655440015",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-001",
+    "wind_steady_kt": "19",
+    "wind_gusts_kt": "27",
+    "precipitation": "000",
+    "visibility_nm": "05",
+    "max_temperature_f": 67,
+    "min_temperature_f": 65,
+    "time_in": "2026-01-18T14:15:00Z",
+    "time_out": "2026-01-18T14:50:00Z",
+    "flight": {
+      "max_alt_asl_m": 1050,
+      "distance_flown_mi": 1.1
+    },
+    "payload": {
+      "total_weight_kg": 0.9,
+      "camera": "00",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.6,
+        "B": 24.4
+      },
+      "voltage_out": {
+        "A": 23.6,
+        "B": 23.7
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": ["0100-001"],
+    "entry_decision": "1000100008"
+  },
+  {
+    "encoding": "01",
+    "session_id": "660e8400-e29b-41d4-a716-446655440016",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-003",
+    "wind_steady_kt": "28",
+    "wind_gusts_kt": "38",
+    "precipitation": "000",
+    "visibility_nm": "02",
+    "max_temperature_f": 61,
+    "min_temperature_f": 59,
+    "time_in": "2026-01-25T08:00:00Z",
+    "time_out": "2026-01-25T08:15:00Z",
+    "flight": {
+      "max_alt_asl_m": 800,
+      "distance_flown_mi": 0.4
+    },
+    "payload": {
+      "total_weight_kg": 0.7,
+      "camera": "00",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.4,
+        "B": 24.2
+      },
+      "voltage_out": {
+        "A": 24.0,
+        "B": 24.1
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "770e8400-e29b-41d4-a716-446655440017",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-005",
+    "wind_steady_kt": "04",
+    "wind_gusts_kt": "07",
+    "precipitation": "000",
+    "visibility_nm": "13",
+    "max_temperature_f": 81,
+    "min_temperature_f": 79,
+    "time_in": "2026-02-10T08:30:00Z",
+    "time_out": "2026-02-10T09:25:00Z",
+    "flight": {
+      "max_alt_asl_m": 1850,
+      "distance_flown_mi": 2.6
+    },
+    "payload": {
+      "total_weight_kg": 1.4,
+      "camera": "10",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.1,
+        "B": 25.0
+      },
+      "voltage_out": {
+        "A": 23.7,
+        "B": 23.8
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "880e8400-e29b-41d4-a716-446655440018",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-002",
+    "wind_steady_kt": "09",
+    "wind_gusts_kt": "13",
+    "precipitation": "000",
+    "visibility_nm": "09",
+    "max_temperature_f": 77,
+    "min_temperature_f": 75,
+    "time_in": "2026-02-18T11:00:00Z",
+    "time_out": "2026-02-18T11:55:00Z",
+    "flight": {
+      "max_alt_asl_m": 1700,
+      "distance_flown_mi": 2.3
+    },
+    "payload": {
+      "total_weight_kg": 1.3,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.9,
+        "B": 24.8
+      },
+      "voltage_out": {
+        "A": 23.6,
+        "B": 23.7
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "990e8400-e29b-41d4-a716-446655440019",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-004",
+    "wind_steady_kt": "13",
+    "wind_gusts_kt": "19",
+    "precipitation": "000",
+    "visibility_nm": "07",
+    "max_temperature_f": 73,
+    "min_temperature_f": 71,
+    "time_in": "2026-03-05T14:20:00Z",
+    "time_out": "2026-03-05T15:10:00Z",
+    "flight": {
+      "max_alt_asl_m": 1550,
+      "distance_flown_mi": 1.9
+    },
+    "payload": {
+      "total_weight_kg": 1.2,
+      "camera": "11",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.8,
+        "B": 24.7
+      },
+      "voltage_out": {
+        "A": 23.5,
+        "B": 23.6
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "aa0e8400-e29b-41d4-a716-446655440020",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-001",
+    "wind_steady_kt": "16",
+    "wind_gusts_kt": "23",
+    "precipitation": "000",
+    "visibility_nm": "06",
+    "max_temperature_f": 69,
+    "min_temperature_f": 67,
+    "time_in": "2026-03-22T09:15:00Z",
+    "time_out": "2026-03-22T10:05:00Z",
+    "flight": {
+      "max_alt_asl_m": 1400,
+      "distance_flown_mi": 1.6
+    },
+    "payload": {
+      "total_weight_kg": 1.1,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.7,
+        "B": 24.5
+      },
+      "voltage_out": {
+        "A": 23.4,
+        "B": 23.5
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "1001000030"
+  },
+  {
+    "encoding": "01",
+    "session_id": "bb0e8400-e29b-41d4-a716-446655440021",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-003",
+    "wind_steady_kt": "03",
+    "wind_gusts_kt": "06",
+    "precipitation": "000",
+    "visibility_nm": "14",
+    "max_temperature_f": 83,
+    "min_temperature_f": 81,
+    "time_in": "2026-04-08T07:45:00Z",
+    "time_out": "2026-04-08T08:40:00Z",
+    "flight": {
+      "max_alt_asl_m": 1950,
+      "distance_flown_mi": 2.9
+    },
+    "payload": {
+      "total_weight_kg": 1.5,
+      "camera": "10",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.0,
+        "B": 24.9
+      },
+      "voltage_out": {
+        "A": 23.8,
+        "B": 23.9
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "cc0e8400-e29b-41d4-a716-446655440022",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-005",
+    "wind_steady_kt": "07",
+    "wind_gusts_kt": "12",
+    "precipitation": "000",
+    "visibility_nm": "11",
+    "max_temperature_f": 78,
+    "min_temperature_f": 76,
+    "time_in": "2026-04-25T12:30:00Z",
+    "time_out": "2026-04-25T13:20:00Z",
+    "flight": {
+      "max_alt_asl_m": 1650,
+      "distance_flown_mi": 2.2
+    },
+    "payload": {
+      "total_weight_kg": 1.2,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.8,
+        "B": 24.7
+      },
+      "voltage_out": {
+        "A": 23.7,
+        "B": 23.8
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "dd0e8400-e29b-41d4-a716-446655440023",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-002",
+    "wind_steady_kt": "11",
+    "wind_gusts_kt": "17",
+    "precipitation": "000",
+    "visibility_nm": "08",
+    "max_temperature_f": 74,
+    "min_temperature_f": 72,
+    "time_in": "2026-05-12T15:00:00Z",
+    "time_out": "2026-05-12T15:50:00Z",
+    "flight": {
+      "max_alt_asl_m": 1500,
+      "distance_flown_mi": 2.0
+    },
+    "payload": {
+      "total_weight_kg": 1.3,
+      "camera": "11",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.9,
+        "B": 24.8
+      },
+      "voltage_out": {
+        "A": 23.5,
+        "B": 23.6
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "ee0e8400-e29b-41d4-a716-446655440024",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-004",
+    "wind_steady_kt": "14",
+    "wind_gusts_kt": "21",
+    "precipitation": "000",
+    "visibility_nm": "07",
+    "max_temperature_f": 71,
+    "min_temperature_f": 69,
+    "time_in": "2026-05-28T10:15:00Z",
+    "time_out": "2026-05-28T11:00:00Z",
+    "flight": {
+      "max_alt_asl_m": 1350,
+      "distance_flown_mi": 1.7
+    },
+    "payload": {
+      "total_weight_kg": 1.0,
+      "camera": "00",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.6,
+        "B": 24.4
+      },
+      "voltage_out": {
+        "A": 23.6,
+        "B": 23.7
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "1001000030"
+  },
+  {
+    "encoding": "01",
+    "session_id": "ff0e8400-e29b-41d4-a716-446655440025",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-001",
+    "wind_steady_kt": "06",
+    "wind_gusts_kt": "10",
+    "precipitation": "000",
+    "visibility_nm": "12",
+    "max_temperature_f": 79,
+    "min_temperature_f": 77,
+    "time_in": "2026-06-14T08:00:00Z",
+    "time_out": "2026-06-14T08:55:00Z",
+    "flight": {
+      "max_alt_asl_m": 1800,
+      "distance_flown_mi": 2.5
+    },
+    "payload": {
+      "total_weight_kg": 1.4,
+      "camera": "10",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 25.1,
+        "B": 25.0
+      },
+      "voltage_out": {
+        "A": 23.6,
+        "B": 23.7
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "110e8400-e29b-41d4-a716-446655440026",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-003",
+    "wind_steady_kt": "10",
+    "wind_gusts_kt": "15",
+    "precipitation": "000",
+    "visibility_nm": "09",
+    "max_temperature_f": 75,
+    "min_temperature_f": 73,
+    "time_in": "2026-07-01T13:30:00Z",
+    "time_out": "2026-07-01T14:25:00Z",
+    "flight": {
+      "max_alt_asl_m": 1600,
+      "distance_flown_mi": 2.1
+    },
+    "payload": {
+      "total_weight_kg": 1.2,
+      "camera": "01",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.8,
+        "B": 24.7
+      },
+      "voltage_out": {
+        "A": 23.8,
+        "B": 23.9
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  },
+  {
+    "encoding": "01",
+    "session_id": "220e8400-e29b-41d4-a716-446655440027",
+    "record_type": "001",
+    "pilot_id": "PILOT-12345",
+    "uav_id": "DRONE-XYZ-001",
+    "zone_id": "ZONE-005",
+    "wind_steady_kt": "08",
+    "wind_gusts_kt": "14",
+    "precipitation": "000",
+    "visibility_nm": "10",
+    "max_temperature_f": 76,
+    "min_temperature_f": 74,
+    "time_in": "2026-07-18T09:45:00Z",
+    "time_out": "2026-07-18T10:40:00Z",
+    "flight": {
+      "max_alt_asl_m": 1750,
+      "distance_flown_mi": 2.4
+    },
+    "payload": {
+      "total_weight_kg": 1.3,
+      "camera": "11",
+      "other": "000"
+    },
+    "battery": {
+      "voltage_in": {
+        "A": 24.9,
+        "B": 24.8
+      },
+      "voltage_out": {
+        "A": 23.7,
+        "B": 23.8
+      },
+      "recharge_in_zone": false,
+      "types": "6S, 1.5Ah, Pack A"
+    },
+    "incidents": [],
+    "entry_decision": "0100000000"
+  }
+]

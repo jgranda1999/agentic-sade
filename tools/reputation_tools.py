@@ -1,12 +1,15 @@
 """
-Reputation Agent Tools - Mock implementations for testing delegation system.
+Reputation Agent Tools - Load from sade-mock-data/reputation_model.json.
 
-These tools retrieve historical reputation and incident data from the Reputation Model Profile.
+Retrieves historical reputation and incident data for a DPO trio by filtering
+sessions from the Reputation Model Profile (mock file). Used with entry requests
+from main.py or entry_requests.json.
 """
 
 import json
+from pathlib import Path
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from agents import function_tool
 from models import (
@@ -17,6 +20,10 @@ from models import (
     IncidentAnalysis,
     ReputationRiskAssessment,
 )
+
+# Path to mock data (sade-mock-data next to tools/)
+_MOCK_DATA_DIR = Path(__file__).resolve().parent.parent / "sade-mock-data"
+_REPUTATION_MODEL_PATH = _MOCK_DATA_DIR / "reputation_model.json"
 
 
 # Incident code mapping table
@@ -109,81 +116,59 @@ def parse_incident_code(incident_code: str) -> tuple[str, str, str, str]:
     return (high_level, sub_code, category, subcategory, severity)
 
 
+def _load_reputation_sessions(pilot_id: str, drone_id: str) -> List[Dict[str, Any]]:
+    """
+    Load sessions from sade-mock-data/reputation_model.json filtered by pilot_id and uav_id.
+    Returns list of session dicts (time_in, time_out, incidents, record_type, wind_steady_kt, wind_gusts_kt, etc.).
+    """
+    if not _REPUTATION_MODEL_PATH.exists():
+        return []
+    raw = json.loads(_REPUTATION_MODEL_PATH.read_text())
+    if not isinstance(raw, list):
+        return []
+    return [
+        s for s in raw
+        if s.get("pilot_id") == pilot_id and s.get("uav_id") == drone_id
+    ]
+
+
 def _retrieve_reputations_impl(
     pilot_id: str,
     org_id: str,
-    drone_id: str
+    drone_id: str,
+    entry_time: str | None = None,
 ) -> ReputationAgentOutput:
     """
-    Retrieve historical trust signals for a DPO trio from Reputation Model Profile endpoint.
-    
+    Retrieve historical trust signals for a DPO trio from sade-mock-data/reputation_model.json.
+
+    Sessions are filtered by pilot_id and uav_id (drone_id). Entry_time is used as the
+    reference date for "recent" incident count (last 30 days).
+
     Args:
-        pilot_id: FAA pilot registration
-        org_id: Organization identifier
-        drone_id: Drone identifier
-    
+        pilot_id: Pilot identifier (e.g. PILOT-12345)
+        org_id: Organization identifier (not in JSON; kept for API shape)
+        drone_id: Drone identifier (e.g. DRONE-XYZ-001), matches uav_id in JSON
+        entry_time: Optional ISO8601 datetime for recent-incident window (default 2026-01-26)
+
     Returns:
         ReputationAgentOutput with reputation summary, incident analysis, and risk assessment
     """
-    # Mock session records - simulate Reputation Model Profile data
-    # In production, this would query the actual endpoint
-    
-    mock_sessions = [
-        {
-            "session_id": "550e8400-e29b-41d4-a716-446655440000",
-            "pilot_id": pilot_id,
-            "uav_id": drone_id,
-            "time_in": "2025-06-15T10:30:00Z",
-            "time_out": "2025-06-15T11:00:00Z",
-            "incidents": ["0100-010"],  # Flight Control Failure
-            "record_type": "001"
-        },
-        {
-            "session_id": "660e8400-e29b-41d4-a716-446655440001",
-            "pilot_id": pilot_id,
-            "uav_id": drone_id,
-            "time_in": "2025-12-20T14:15:00Z",
-            "time_out": "2025-12-20T14:45:00Z",
-            "incidents": ["0001-001"],  # Serious Injury
-            "record_type": "001"
-        },
-        {
-            "session_id": "770e8400-e29b-41d4-a716-446655440002",
-            "pilot_id": pilot_id,
-            "uav_id": drone_id,
-            "time_in": "2025-08-10T09:20:00Z",
-            "time_out": "2025-08-10T09:50:00Z",
-            "incidents": ["0101-011"],  # Overflight Without Waiver
-            "record_type": "001"
-        },
-        # Follow-up report for first incident
-        {
-            "session_id": "880e8400-e29b-41d4-a716-446655440003",
-            "pilot_id": pilot_id,
-            "uav_id": drone_id,
-            "time_in": "2025-06-16T10:00:00Z",
-            "time_out": "2025-06-16T10:30:00Z",
-            "incidents": ["0100-010"],  # Follow-up for Flight Control Failure
-            "record_type": "010"  # Follow-up report
-        }
-    ]
-    
-    # Collect all incidents
+    sessions = _load_reputation_sessions(pilot_id, drone_id)
+
+    # Collect all incidents from sessions (one incident record per session per code)
     all_incidents = []
-    incident_codes_seen = set()
-    
-    for session in mock_sessions:
+    incident_codes_seen: set[str] = set()
+
+    for session in sessions:
         for incident_code in session.get("incidents", []):
             if incident_code not in incident_codes_seen:
                 incident_codes_seen.add(incident_code)
                 high_level, sub_code, category, subcategory, severity = parse_incident_code(incident_code)
-                
-                # Check if resolved (has follow-up report)
+                # Resolved if any session has record_type "010" (follow-up) for this incident
                 resolved = any(
                     s.get("record_type") == "010" and incident_code in s.get("incidents", [])
-                    for s in mock_sessions
+                    for s in sessions
                 )
-                
                 incident = Incident(
                     incident_code=incident_code,
                     incident_category=category,
@@ -191,19 +176,27 @@ def _retrieve_reputations_impl(
                     severity=severity,
                     resolved=resolved,
                     session_id=session["session_id"],
-                    date=session["time_in"]
+                    date=session["time_in"],
                 )
                 all_incidents.append(incident)
-    
-    # Calculate recent incidents (last 30 days)
-    # Use a reference date for testing (2026-01-26)
-    from datetime import timezone
-    reference_date = datetime.fromisoformat("2026-01-26T00:00:00Z".replace('Z', '+00:00'))
+
+    # Recent incidents: relative to entry_time or default reference
+    if entry_time:
+        try:
+            ref_str = entry_time.replace("Z", "+00:00") if entry_time.endswith("Z") else entry_time
+            reference_date = datetime.fromisoformat(ref_str)
+        except (ValueError, TypeError):
+            reference_date = datetime(2026, 1, 26, tzinfo=timezone.utc)
+    else:
+        reference_date = datetime(2026, 1, 26, tzinfo=timezone.utc)
     thirty_days_ago = reference_date - timedelta(days=30)
     
     recent_count = 0
     for inc in all_incidents:
-        inc_date = datetime.fromisoformat(inc.date.replace('Z', '+00:00'))
+        inc_date_str = inc.date.replace("Z", "+00:00") if inc.date.endswith("Z") else inc.date
+        inc_date = datetime.fromisoformat(inc_date_str)
+        if inc_date.tzinfo is None and reference_date.tzinfo is not None:
+            inc_date = inc_date.replace(tzinfo=timezone.utc)
         if inc_date >= thirty_days_ago:
             recent_count += 1
     
@@ -259,22 +252,67 @@ def _retrieve_reputations_impl(
         blocking_factors=blocking_factors,
         confidence_factors=confidence_factors
     )
-    
+
+    # v2 orchestration fields from sessions (reputation_model.json)
+    def _parse_wind(s: Any) -> float:
+        if s is None:
+            return 0.0
+        try:
+            return float(str(s).strip())
+        except (ValueError, TypeError):
+            return 0.0
+
+    drp_sessions_count = len(sessions)
+    demo_steady_max_kt = max(
+        (_parse_wind(s.get("wind_steady_kt")) for s in sessions),
+        default=0.0,
+    )
+    demo_gust_max_kt = max(
+        (_parse_wind(s.get("wind_gusts_kt")) for s in sessions),
+        default=0.0,
+    )
+    incident_codes = [
+        code for s in sessions for code in s.get("incidents", [])
+    ]
+    n_0100_0101 = sum(
+        1 for code in incident_codes
+        if "-" in code and code.split("-")[0] in ("0100", "0101")
+    )
+    recommendation = risk_level
+    why = [
+        f"drp_sessions_count={drp_sessions_count}",
+        f"demo_steady_max_kt={demo_steady_max_kt}",
+        f"demo_gust_max_kt={demo_gust_max_kt}",
+        f"n_0100_0101={n_0100_0101}",
+        f"unresolved_incidents_present={unresolved_present}",
+    ]
+    if incident_codes:
+        prefixes = list(dict.fromkeys(c.split("-")[0] for c in incident_codes if "-" in c))
+        why.append(f"incident_prefixes_present={prefixes[:10]}")
+
     return ReputationAgentOutput(
         reputation_summary=reputation_summary,
         incident_analysis=incident_analysis,
-        risk_assessment=risk_assessment
+        risk_assessment=risk_assessment,
+        drp_sessions_count=drp_sessions_count,
+        demo_steady_max_kt=demo_steady_max_kt,
+        demo_gust_max_kt=demo_gust_max_kt,
+        incident_codes=incident_codes,
+        n_0100_0101=n_0100_0101,
+        recommendation=recommendation,
+        why=why[:8],
     )
 
 
 @function_tool
 def retrieve_reputations(input_json: str) -> ReputationAgentOutput:
     """
-    Retrieve historical trust signals for a Drone|Pilot|Organization trio from Reputation Model Profile endpoint.
-    
+    Retrieve historical trust signals for a Drone|Pilot|Organization trio from
+    sade-mock-data/reputation_model.json. Sessions are filtered by pilot_id and uav_id (drone_id).
+
     Args:
         input_json: JSON string with pilot_id, org_id, drone_id, entry_time, request
-    
+
     Returns:
         ReputationAgentOutput with reputation summary, incident analysis, and risk assessment
     """
@@ -282,5 +320,6 @@ def retrieve_reputations(input_json: str) -> ReputationAgentOutput:
     return _retrieve_reputations_impl(
         pilot_id=data["pilot_id"],
         org_id=data["org_id"],
-        drone_id=data["drone_id"]
+        drone_id=data["drone_id"],
+        entry_time=data.get("entry_time"),
     )

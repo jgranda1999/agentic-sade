@@ -103,11 +103,25 @@ def _retrieveEnvironment_impl(
         constraint_suggestions.append("SPEED_LIMIT(7 m/s)")
     if raw_conditions.wind_gust > 15:
         constraint_suggestions.append("MAX_ALTITUDE(300 m)")
-    
+
+    # v2 visibility: recommendation (wind risk signal) and why
+    recommendation = risk_level
+    why = [
+        f"wind_steady_kt={raw_conditions.wind}",
+        f"wind_gust_kt={raw_conditions.wind_gust}",
+        f"risk_level={risk_level}",
+    ]
+    if blocking_factors:
+        why.append(f"blocking_factors={blocking_factors}")
+    if marginal_factors:
+        why.append(f"marginal_factors={marginal_factors}")
+
     return EnvironmentAgentOutput(
         raw_conditions=raw_conditions,
         risk_assessment=risk_assessment,
-        constraint_suggestions=constraint_suggestions
+        constraint_suggestions=constraint_suggestions,
+        recommendation=recommendation,
+        why=why[:6],
     )
 
 
