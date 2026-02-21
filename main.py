@@ -1,6 +1,7 @@
 import asyncio
 import json
 import re
+import sys, os
 from pathlib import Path
 from typing import Dict, Any
 
@@ -215,67 +216,74 @@ async def process_entry_request(
     raw = result.final_output.strip()
     return parse_orchestrator_output(raw)
 
-
+# Main function
 async def main():
     """
     Example entry request processing.
     """
     # Example Entry Request (pilot_id/drone_id match sade-mock-data/reputation_model.json and user_input.json)
-    example_request = {
-        "sade_zone_id": "ZONE-001",
-        "pilot_id": "PILOT-12345",
-        "organization_id": "ORG-ABC",
-        "drone_id": "DRONE-XYZ-001",
-        "requested_entry_time": "2026-02-02T10:00:00Z",
-        "request_type": "REGION",
-        "request_payload": {
-            "polygon": [
-                {"lat": 41.7000, "lon": -86.2400},
-                {"lat": 41.7010, "lon": -86.2400},
-                {"lat": 41.7010, "lon": -86.2390},
-                {"lat": 41.7000, "lon": -86.2390},
-            ],
-            "ceiling": 300,  # meters ASL
-            "floor": 100,    # meters ASL
-        },
-    }
-    
-    print("=" * 70)
-    print("SADE Entry Request Processing")
-    print("=" * 70)
-    print("\nEntry Request:")
-    print(json.dumps(example_request, indent=2))
-    print("\n" + "=" * 70)
-    print("Processing...")
-    print("=" * 70 + "\n")
-    
-    try:
-        output = await process_entry_request(example_request)
-        decision = output.get("decision", {})
-        decision_type = decision.get("type", "UNKNOWN")
-        sade_message = decision.get("sade_message", "")
-
+    with open("sade-mock-data/entry_requests.json", "r") as f:
+        example_requests = json.load(f)
+        
+    for request in example_requests:
+        print("=" * 70)
+        print("SADE Entry Request Processing")
+        print("=" * 70)
+        print("\nEntry Request:")
+        print(json.dumps(request, indent=2))
         print("\n" + "=" * 70)
-        print("FINAL DECISION")
-        print("=" * 70)
-        print(f"Type: {decision_type}")
-        print(f"SADE Message: {sade_message}")
-        if decision.get("constraints"):
-            print(f"Constraints: {decision['constraints']}")
-        if decision.get("denial_code"):
-            print(f"Denial Code: {decision['denial_code']}")
-        if decision.get("explanation"):
-            print(f"Explanation: {decision['explanation']}")
-        print("=" * 70)
-        print("\nFull output (decision + visibility):")
-        print(json.dumps(output, indent=2))
+        print("Processing...")
+        print("=" * 70 + "\n")
+        
+        try:
+            output = await process_entry_request(request)
+            decision = output.get("decision", {})
+            decision_type = decision.get("type", "UNKNOWN")
+            sade_message = decision.get("sade_message", "")
 
-    except ValueError as e:
-        print(f"\nParse error: {e}")
-    except Exception as e:
-        print(f"\nERROR: {e}")
-        import traceback
-        traceback.print_exc()
+            # Determine test number based on the loop index, if available
+            # Since here we don't have direct access to loop index, let's assume
+            # you want to name files like entry_result_1.txt, entry_result_2.txt, etc.
+            # We'll try to infer test number based on the request or you may want to pass
+            # loop index explicitly.
+            #
+            # To keep things robust, let's fallback to a per-request "sade_zone_id" as default.
+            #
+            # Recommended pattern: enumerate(example_request, start=1) in main()
+
+            # You will need to get 'test_number' from outside this block. For now:
+            test_number = request.get('sade_zone_id', 'result')  # fallback if no test number available
+
+            output_filename = f"results/entry_result_changed_wind_gust{test_number}.txt"
+            with open(output_filename, "w") as f:
+                f.write("=" * 70 + "\n")
+                f.write("FINAL DECISION\n")
+                f.write("=" * 70 + "\n")
+                f.write(f"Type: {decision_type}\n")
+                f.write(f"SADE Message: {sade_message}\n")
+                if decision.get("constraints"):
+                    f.write(f"Constraints: {decision['constraints']}\n")
+                if decision.get("denial_code"):
+                    f.write(f"Denial Code: {decision['denial_code']}\n")
+                # Always show explanation (orchestrator prompt requires it; fallback if legacy output)
+                explanation = decision.get("explanation") or "(none)"
+                f.write(f"Explanation: {explanation}\n")
+                f.write("=" * 70 + "\n\n")
+                f.write("Full output (decision + visibility):\n")
+                f.write(json.dumps(output, indent=2))
+                f.write("\n")
+            print(f"\nOutput written to {output_filename}")
+
+        except ValueError as e:
+            print(f"\nParse error: {e}")
+        except Exception as e:
+            print(f"\nERROR: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Add delay after each request is processed to avoid rate limits
+        print(f"\nWaiting 60 seconds before processing next request...\n")
+        await asyncio.sleep(60.0)
 
 
 if __name__ == "__main__":

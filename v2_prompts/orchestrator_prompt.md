@@ -148,7 +148,7 @@ Return exactly ONE JSON object:
     "action_id": "string|null",
     "actions": ["string"],
     "denial_code": "string|null",
-    "explanation": "string|null"
+    "explanation": "string"
   },
   "visibility": {
     "entry_request": { ... },
@@ -190,7 +190,8 @@ STRICT RULES:
 
 - If type != APPROVED-CONSTRAINTS → constraints [].
 - If type != ACTION-REQUIRED → action_id null and actions [].
-- If type != DENIED → denial_code null and explanation null.
+- If type != DENIED → denial_code null; explanation must still be a non-empty string (make sure to give detailed explanation and citating the Environement Agent, Reputation Agent and Claims Agent if it makes sense to do so).
+- For every decision type, explanation is REQUIRED: a one-sentence human-readable reason (e.g. "Approved: wind within envelope; no high-severity incidents; claims satisfied." or "Approved with constraints: near wind envelope; SPEED_LIMIT(7m/s), MAX_ALTITUDE(30m)." or for DENIED use the explanation from STATE 5).
 - rule_trace contains only rule identifiers.
 
 ============================================================
@@ -355,6 +356,12 @@ STATE 6 — Emit Final JSON
 
 Emit exactly one JSON object.
 Final decision MUST reflect STATE 5 outcome.
+
+Always set "explanation" to a non-empty string:
+- APPROVED: e.g. "Approved: wind within envelope; no high-severity incidents; claims satisfied."
+- APPROVED-CONSTRAINTS: e.g. "Approved with constraints: near wind envelope; constraints applied."
+- ACTION-REQUIRED: e.g. "Action required: list unsatisfied actions and what is needed."
+- DENIED: use the explanation from STATE 5 (e.g. "High severity incident mitigation was not satisfied.").
 
 rule_trace must include:
 - the STATE_3 rule triggered

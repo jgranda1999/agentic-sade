@@ -57,8 +57,8 @@ def _retrieveEnvironment_impl(
     
     # Mock environmental conditions
     raw_conditions = RawConditions(
-        wind=12.5,  # knots
-        wind_gust=18.0,  # knots
+        wind=30.0,  # knots
+        wind_gust=40.0,  # knots
         precipitation="none",
         visibility=10.0,  # nautical miles
         light_conditions=light,
