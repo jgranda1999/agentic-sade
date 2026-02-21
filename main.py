@@ -1,34 +1,41 @@
 import asyncio
 import json
 import re
+import sys, os
 from pathlib import Path
 from typing import Dict, Any
 
 from agents import Agent, Runner, trace
 
+# Single-run flow: orchestrator must not return until final decision (v2 prompt)
+DEFAULT_MAX_TURNS = 25
+
 from models import (
     EnvironmentAgentOutput,
     ReputationAgentOutput,
     ActionRequiredAgentOutput,
+    ClaimsAgentOutput,
 )
 from tools.environment_tools import retrieveEnvironment
 from tools.reputation_tools import retrieve_reputations
 from tools.action_required_tools import request_attestation
+from tools.claims_tools import retrieve_claims
 
 
-def load_prompt(prompt_file: str) -> str:
+def load_prompt(prompt_file: str, prompts_dir: str = "prompts") -> str:
     """Load prompt text from a markdown file."""
-    prompt_path = Path(__file__).parent / "prompts" / prompt_file
+    prompt_path = Path(__file__).parent / prompts_dir / prompt_file
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
     return prompt_path.read_text()
 
 
-# Load agent prompts
-ORCHESTRATOR_PROMPT = load_prompt("orchestrator_prompt.md")
-ENVIRONMENT_AGENT_PROMPT = load_prompt("environment_agent_prompt.md")
-REPUTATION_AGENT_PROMPT = load_prompt("reputation_agent_prompt.md")
+# Load agent prompts (v2: orchestrator, env, rm, claims; v1: action_required for SafeCert tool)
+ORCHESTRATOR_PROMPT = load_prompt("orchestrator_prompt.md", prompts_dir="v2_prompts")
+ENVIRONMENT_AGENT_PROMPT = load_prompt("env_agent_prompt.md", prompts_dir="v2_prompts")
+REPUTATION_AGENT_PROMPT = load_prompt("rm_agent_prompt.md", prompts_dir="v2_prompts")
 ACTION_REQUIRED_AGENT_PROMPT = load_prompt("action_required_agent_prompt.md")
+CLAIMS_AGENT_PROMPT = load_prompt("claims_agent_prompt.md", prompts_dir="v2_prompts")
 
 
 # Sub-Agents (Advisory Only - Never Make Decisions)
@@ -55,6 +62,14 @@ action_required_agent = Agent(
     output_type=ActionRequiredAgentOutput,
     tools=[request_attestation],
     handoff_description="Interfaces with SafeCert to request and retrieve formal evidence attestations",
+)
+
+claims_agent = Agent(
+    name="claims_agent",
+    instructions=CLAIMS_AGENT_PROMPT,
+    output_type=ClaimsAgentOutput,
+    tools=[retrieve_claims],
+    handoff_description="Verifies required_actions against DPO claims and follow-up records; returns satisfied/unsatisfied actions and incident resolution status",
 )
 
 
@@ -87,6 +102,16 @@ orchestrator_agent = Agent(
                 "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, safecert_pin, evidence_required. "
                 "Returns: ActionRequiredAgentOutput (validated Pydantic model) with satisfied (boolean) and attestation. "
                 "Only call this when ACTION-REQUIRED decision has been issued."
+            ),
+        ),
+        claims_agent.as_tool(
+            tool_name="claims_agent",
+            tool_description=(
+                "Verify required_actions against DPO claims and follow-up records. "
+                "Input: JSON string with keys: action_id, pilot_id, org_id, drone_id, entry_time, "
+                "required_actions (list), incident_codes (list of hhhh-sss), wind_context (wind_now_kt, gust_now_kt, demo_steady_max_kt, demo_gust_max_kt). "
+                "Returns: ClaimsAgentOutput with satisfied, resolved_incident_prefixes, unresolved_incident_prefixes, "
+                "satisfied_actions, unsatisfied_actions, why. Call this when STATE 3 yields ACTION-REQUIRED before emitting any final decision."
             ),
         ),
     ],
@@ -136,156 +161,129 @@ def format_entry_request(request: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def extract_evidence_required(decision_output: str) -> Dict[str, Any]:
+def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
     """
-    Extract evidence_required JSON from ACTION-REQUIRED decision output.
-    
-    Looks for JSON code blocks in the output and parses the evidence_required structure.
+    Parse the orchestrator's final output as JSON (v2 contract: decision + visibility).
+
+    Tries raw JSON first, then a single ```json ... ``` code block.
+    Raises ValueError if no valid JSON object with "decision" is found.
     """
-    # Try to find JSON code blocks
-    json_pattern = r'```json\s*(\{.*?\})\s*```'
-    matches = re.findall(json_pattern, decision_output, re.DOTALL)
-    
-    for match in matches:
+    text = raw.strip()
+    # Try raw parse
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict) and "decision" in parsed:
+            return parsed
+    except json.JSONDecodeError:
+        pass
+    # Try extracting ```json ... ``` block
+    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if match:
         try:
-            parsed = json.loads(match)
-            # Check if this looks like an evidence requirement
-            if isinstance(parsed, dict) and parsed.get("type") == "EVIDENCE_REQUIREMENT":
+            parsed = json.loads(match.group(1).strip())
+            if isinstance(parsed, dict) and "decision" in parsed:
                 return parsed
         except json.JSONDecodeError:
-            continue
-    
-    # If no JSON block found, try to find evidence_required: followed by JSON
-    evidence_pattern = r'evidence_required[:\s]*```json\s*(\{.*?\})\s*```'
-    matches = re.findall(evidence_pattern, decision_output, re.DOTALL | re.IGNORECASE)
-    
-    for match in matches:
-        try:
-            parsed = json.loads(match)
-            if isinstance(parsed, dict) and parsed.get("type") == "EVIDENCE_REQUIREMENT":
-                return parsed
-        except json.JSONDecodeError:
-            continue
-    
-    return None
+            pass
+    raise ValueError("Orchestrator output did not contain valid JSON with 'decision'")
 
 
-def is_final_decision(decision: str) -> bool:
-    """Check if decision is final (not ACTION-REQUIRED)."""
-    decision_upper = decision.upper()
-    return (
-        "APPROVED" in decision_upper and "ACTION-REQUIRED" not in decision_upper
-    ) or "DENIED" in decision_upper
-
-
-async def process_entry_request(request: Dict[str, Any], max_iterations: int = 5) -> str:
+async def process_entry_request(
+    request: Dict[str, Any],
+    max_turns: int = DEFAULT_MAX_TURNS,
+) -> Dict[str, Any]:
     """
-    Process an entry request through the SADE Orchestrator Agent.
-    
-    Loops until a final decision is reached (APPROVED, APPROVED-CONSTRAINTS, or DENIED).
-    If ACTION-REQUIRED is issued, extracts evidence_required and continues with
-    safecert_pin and evidence_required in the request.
-    
+    Process an entry request through the SADE Orchestrator Agent (single run).
+
+    The v2 orchestrator runs until it emits a final JSON (calling env, reputation,
+    and claims_agent as needed in one run). No outer loop.
+
     Args:
         request: Entry request dictionary
-        max_iterations: Maximum number of iterations to prevent infinite loops
-    
+        max_turns: Max LLM/tool turns per run (default 25)
+
     Returns:
-        Final decision string (APPROVED, APPROVED-CONSTRAINTS, or DENIED)
+        Parsed output dict with "decision" and "visibility" (v2 contract).
+        Raises ValueError if output could not be parsed as JSON.
     """
-    current_request = request.copy()
-    iteration = 0
-    last_decision = None
-    
-    while iteration < max_iterations:
-        iteration += 1
-        formatted_request = format_entry_request(current_request)
-        
-        with trace(f"SADE Entry Request Processing - Iteration {iteration}"):
-            result = await Runner.run(orchestrator_agent, formatted_request)
-            
-            # Extract the decision from the agent's output
-            decision_output = result.final_output.strip()
-            last_decision = decision_output
-            
-            # Check if this is a final decision
-            if is_final_decision(decision_output):
-                return decision_output
-            
-            # If ACTION-REQUIRED, extract evidence_required and continue
-            if "ACTION-REQUIRED" in decision_output.upper():
-                print(f"\n[Iteration {iteration}] ACTION-REQUIRED issued. Extracting evidence requirements...")
-                
-                evidence_required = extract_evidence_required(decision_output)
-                
-                if evidence_required:
-                    # Add safecert_pin and evidence_required to request for next iteration
-                    # Use a mock PIN for testing
-                    current_request["safecert_pin"] = current_request.get("safecert_pin", "MOCK-PIN-12345")
-                    current_request["evidence_required"] = evidence_required
-                    
-                    print(f"[Iteration {iteration}] Evidence requirements extracted. Continuing to ACTION-REQUIRED agent...\n")
-                    continue
-                else:
-                    print(f"[Iteration {iteration}] WARNING: Could not extract evidence_required from output.")
-                    print("Output was:")
-                    print(decision_output[:500])  # Print first 500 chars
-                    return decision_output  # Return as-is if we can't parse
-            
-            # If we get here and it's not a final decision, return what we have
-            return decision_output
-    
-    # If we've exceeded max iterations, return the last decision we got
-    print(f"\nWARNING: Maximum iterations ({max_iterations}) reached.")
-    return last_decision if last_decision else "ERROR: Maximum iterations exceeded. Could not reach final decision."
+    formatted_request = format_entry_request(request)
+    with trace("SADE Entry Request Processing"):
+        result = await Runner.run(
+            orchestrator_agent,
+            formatted_request,
+            max_turns=max_turns,
+        )
+    raw = result.final_output.strip()
+    return parse_orchestrator_output(raw)
 
-
+# Main function
 async def main():
     """
     Example entry request processing.
     """
-    # Example Entry Request
-    example_request  = {
-        "sade_zone_id": "ZONE-123",
-        "pilot_id": "FA-01234567",
-        "organization_id": "ORG-789",
-        "drone_id": "DRONE-001",
-        "requested_entry_time": "2026-01-26T14:00:00Z",
-        "request_type": "REGION",
-        "request_payload": {
-            "polygon": [
-                {"lat": 41.7000, "lon": -86.2400},
-                {"lat": 41.7010, "lon": -86.2400},
-                {"lat": 41.7010, "lon": -86.2390},
-                {"lat": 41.7000, "lon": -86.2390},
-            ],
-            "ceiling": 300,  # meters ASL
-            "floor": 100,    # meters ASL
-        },
-    }
-    
-    print("=" * 70)
-    print("SADE Entry Request Processing")
-    print("=" * 70)
-    print("\nEntry Request:")
-    print(json.dumps(example_request, indent=2))
-    print("\n" + "=" * 70)
-    print("Processing...")
-    print("=" * 70 + "\n")
-    
-    try:
-        decision = await process_entry_request(example_request)
+    # Example Entry Request (pilot_id/drone_id match sade-mock-data/reputation_model.json and user_input.json)
+    with open("sade-mock-data/entry_requests.json", "r") as f:
+        example_requests = json.load(f)
         
+    for request in example_requests:
+        print("=" * 70)
+        print("SADE Entry Request Processing")
+        print("=" * 70)
+        print("\nEntry Request:")
+        print(json.dumps(request, indent=2))
         print("\n" + "=" * 70)
-        print("FINAL DECISION")
-        print("=" * 70)
-        print(decision)
-        print("=" * 70)
+        print("Processing...")
+        print("=" * 70 + "\n")
         
-    except Exception as e:
-        print(f"\nERROR: {e}")
-        import traceback
-        traceback.print_exc()
+        try:
+            output = await process_entry_request(request)
+            decision = output.get("decision", {})
+            decision_type = decision.get("type", "UNKNOWN")
+            sade_message = decision.get("sade_message", "")
+
+            # Determine test number based on the loop index, if available
+            # Since here we don't have direct access to loop index, let's assume
+            # you want to name files like entry_result_1.txt, entry_result_2.txt, etc.
+            # We'll try to infer test number based on the request or you may want to pass
+            # loop index explicitly.
+            #
+            # To keep things robust, let's fallback to a per-request "sade_zone_id" as default.
+            #
+            # Recommended pattern: enumerate(example_request, start=1) in main()
+
+            # You will need to get 'test_number' from outside this block. For now:
+            test_number = request.get('sade_zone_id', 'result')  # fallback if no test number available
+
+            output_filename = f"results/entry_result_changed_wind_gust{test_number}.txt"
+            with open(output_filename, "w") as f:
+                f.write("=" * 70 + "\n")
+                f.write("FINAL DECISION\n")
+                f.write("=" * 70 + "\n")
+                f.write(f"Type: {decision_type}\n")
+                f.write(f"SADE Message: {sade_message}\n")
+                if decision.get("constraints"):
+                    f.write(f"Constraints: {decision['constraints']}\n")
+                if decision.get("denial_code"):
+                    f.write(f"Denial Code: {decision['denial_code']}\n")
+                # Always show explanation (orchestrator prompt requires it; fallback if legacy output)
+                explanation = decision.get("explanation") or "(none)"
+                f.write(f"Explanation: {explanation}\n")
+                f.write("=" * 70 + "\n\n")
+                f.write("Full output (decision + visibility):\n")
+                f.write(json.dumps(output, indent=2))
+                f.write("\n")
+            print(f"\nOutput written to {output_filename}")
+
+        except ValueError as e:
+            print(f"\nParse error: {e}")
+        except Exception as e:
+            print(f"\nERROR: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Add delay after each request is processed to avoid rate limits
+        print(f"\nWaiting 60 seconds before processing next request...\n")
+        await asyncio.sleep(60.0)
 
 
 if __name__ == "__main__":

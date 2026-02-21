@@ -1,0 +1,68 @@
+[
+  {
+    "sade_zone_id": "ZONE-001",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-ABC",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T10:00:00Z",
+    "request_type": "ZONE"
+  },
+  {
+    "sade_zone_id": "ZONE-002",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-DEF",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T14:30:00Z",
+    "request_type": "REGION",
+    "request_payload": {
+      "polygon": "ZONE_CEILING",
+      "ceiling": "GROUND"
+    }
+  },
+  {
+    "sade_zone_id": "ZONE-003",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-GHI",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T16:00:00Z",
+    "request_type": "REGION",
+    "request_payload": {
+      "polygon": [],
+      "ceiling": 300,
+      "floor": 250
+    }
+  },
+  {
+    "sade_zone_id": "ZONE-004",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-JKL",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-02T18:00:00Z",
+    "request_type": "ROUTE",
+    "request_payload": {
+      "waypoints": [
+        {"lat": 37.7749, "lon": -122.4194, "altitude": 100},
+        {"lat": 37.7849, "lon": -122.4294, "altitude": 120},
+        {"lat": 37.7949, "lon": -122.4394, "altitude": 110},
+        {"lat": 37.8049, "lon": -122.4494, "altitude": 100}
+      ]
+    }
+  },
+  {
+    "sade_zone_id": "ZONE-005",
+    "pilot_id": "PILOT-12345",
+    "organization_id": "ORG-MNO",
+    "drone_id": "DRONE-XYZ-001",
+    "requested_entry_time": "2026-02-03T09:00:00Z",
+    "request_type": "ROUTE",
+    "request_payload": {
+      "waypoints": [
+        {"lat": 40.7128, "lon": -74.0060, "altitude": 150},
+        {"lat": 40.7228, "lon": -74.0160, "altitude": 180},
+        {"lat": 40.7328, "lon": -74.0260, "altitude": 200},
+        {"lat": 40.7428, "lon": -74.0360, "altitude": 180},
+        {"lat": 40.7528, "lon": -74.0460, "altitude": 150}
+      ]
+    }
+  }
+]
