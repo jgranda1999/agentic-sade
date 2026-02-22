@@ -14,8 +14,6 @@ from datetime import datetime, timedelta, timezone
 from agents import function_tool
 from models import (
     ReputationAgentOutput,
-    ReputationSummary,
-    ReputationScore,
     Incident,
     IncidentAnalysis,
     ReputationRiskAssessment,
@@ -210,19 +208,11 @@ def _retrieve_reputations_impl(
         recent_incidents_count=recent_count
     )
     
-    # Mock reputation scores/tiers (in production, these come from endpoint)
-    # For testing, return null to simulate endpoint not providing scores
-    reputation_summary = ReputationSummary(
-        pilot_reputation=ReputationScore(score=8.5, tier="HIGH"),
-        organization_reputation=ReputationScore(score=7.2, tier="MEDIUM"),
-        drone_reputation=ReputationScore(score=9.0, tier="HIGH")
-    )
-    
-    # Risk assessment based on incidents
+    # Risk assessment based on incidents (no reputation_summary; decision from full model only)
     risk_level = "LOW"
     blocking_factors = []
     confidence_factors = []
-    
+
     if unresolved_present:
         high_severity_unresolved = any(
             not inc.resolved and inc.severity == "HIGH"
@@ -234,19 +224,13 @@ def _retrieve_reputations_impl(
         else:
             risk_level = "MEDIUM"
             blocking_factors.append("unresolved_incidents_present")
-    
+
     if recent_count == 0:
         confidence_factors.append("no_recent_incidents")
-    
+
     if all(inc.resolved for inc in all_incidents):
         confidence_factors.append("all_incidents_resolved")
-    
-    if reputation_summary.pilot_reputation.tier == "HIGH":
-        confidence_factors.append("high_pilot_reputation")
-    
-    if reputation_summary.drone_reputation.tier == "HIGH":
-        confidence_factors.append("high_drone_reputation")
-    
+
     risk_assessment = ReputationRiskAssessment(
         risk_level=risk_level,
         blocking_factors=blocking_factors,
@@ -290,8 +274,14 @@ def _retrieve_reputations_impl(
         prefixes = list(dict.fromkeys(c.split("-")[0] for c in incident_codes if "-" in c))
         why.append(f"incident_prefixes_present={prefixes[:10]}")
 
+    recommendation_prose = (
+        f"Historical risk signal: {risk_level}. Sessions={drp_sessions_count}, "
+        f"demo wind envelope steady={demo_steady_max_kt} kt gust={demo_gust_max_kt} kt; "
+        f"n_0100_0101={n_0100_0101}, unresolved_incidents_present={unresolved_present}."
+    )
+    why_prose = "; ".join(why[:8])
+
     return ReputationAgentOutput(
-        reputation_summary=reputation_summary,
         incident_analysis=incident_analysis,
         risk_assessment=risk_assessment,
         drp_sessions_count=drp_sessions_count,
@@ -300,6 +290,8 @@ def _retrieve_reputations_impl(
         incident_codes=incident_codes,
         n_0100_0101=n_0100_0101,
         recommendation=recommendation,
+        recommendation_prose=recommendation_prose,
+        why_prose=why_prose,
         why=why[:8],
     )
 

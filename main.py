@@ -15,6 +15,7 @@ from models import (
     ReputationAgentOutput,
     ActionRequiredAgentOutput,
     ClaimsAgentOutput,
+    OrchestratorOutput,
 )
 from tools.environment_tools import retrieveEnvironment
 from tools.reputation_tools import retrieve_reputations
@@ -30,12 +31,12 @@ def load_prompt(prompt_file: str, prompts_dir: str = "prompts") -> str:
     return prompt_path.read_text()
 
 
-# Load agent prompts (v2: orchestrator, env, rm, claims; v1: action_required for SafeCert tool)
-ORCHESTRATOR_PROMPT = load_prompt("orchestrator_prompt.md", prompts_dir="v2_prompts")
-ENVIRONMENT_AGENT_PROMPT = load_prompt("env_agent_prompt.md", prompts_dir="v2_prompts")
-REPUTATION_AGENT_PROMPT = load_prompt("rm_agent_prompt.md", prompts_dir="v2_prompts")
+# Load agent prompts (v3: orchestrator, env, rm, claims with visibility _prose; v1: action_required for SafeCert tool)
+ORCHESTRATOR_PROMPT = load_prompt("orchestrator_prompt.md", prompts_dir="v3_prompts")
+ENVIRONMENT_AGENT_PROMPT = load_prompt("env_agent_prompt.md", prompts_dir="v3_prompts")
+REPUTATION_AGENT_PROMPT = load_prompt("rm_agent_prompt.md", prompts_dir="v3_prompts")
 ACTION_REQUIRED_AGENT_PROMPT = load_prompt("action_required_agent_prompt.md")
-CLAIMS_AGENT_PROMPT = load_prompt("claims_agent_prompt.md", prompts_dir="v2_prompts")
+CLAIMS_AGENT_PROMPT = load_prompt("claims_agent_prompt.md", prompts_dir="v3_prompts")
 
 
 # Sub-Agents (Advisory Only - Never Make Decisions)
@@ -45,7 +46,7 @@ environment_agent = Agent(
     instructions=ENVIRONMENT_AGENT_PROMPT,
     output_type=EnvironmentAgentOutput,
     tools=[retrieveEnvironment],
-    handoff_description="Retrieves external environmental conditions (weather, light, airspace) for a Drone|Pilot|Organization entry request",
+    handoff_description="Retrieves external environmental conditions (weather, light, airspace) for a Drone|Pilot|Organization entry request and makes a recommendation based on the environmental conditions",
 )
 
 reputation_agent = Agent(
@@ -53,7 +54,7 @@ reputation_agent = Agent(
     instructions=REPUTATION_AGENT_PROMPT,
     output_type=ReputationAgentOutput,
     tools=[retrieve_reputations],
-    handoff_description="Retrieves historical trust and reliability signals (pilot, organization, drone reputation and incidents)",
+    handoff_description="Retrieves historical trust and reliability signals (pilot, organization, drone reputation and incidents) and makes a recommendation based on the reputation data",
 )
 
 action_required_agent = Agent(
@@ -69,7 +70,7 @@ claims_agent = Agent(
     instructions=CLAIMS_AGENT_PROMPT,
     output_type=ClaimsAgentOutput,
     tools=[retrieve_claims],
-    handoff_description="Verifies required_actions against DPO claims and follow-up records; returns satisfied/unsatisfied actions and incident resolution status",
+    handoff_description="Verifies required_actions against DPO claims and follow-up records; returns satisfied/unsatisfied actions and incident resolution status and makes a recommendation based on the claims data",
 )
 
 
@@ -92,7 +93,7 @@ orchestrator_agent = Agent(
             tool_description=(
                 "Retrieve historical trust signals for a Drone|Pilot|Organization trio. "
                 "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, request. "
-                "Returns: ReputationAgentOutput (validated Pydantic model) with reputation_summary, incident_analysis, risk_assessment."
+                "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, orchestration fields."
             ),
         ),
         action_required_agent.as_tool(
@@ -161,11 +162,25 @@ def format_entry_request(request: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _normalize_visibility(parsed: Dict[str, Any]) -> None:
+    """Normalize visibility so it matches models.py (e.g. entry_request field names)."""
+    vis = parsed.get("visibility") or {}
+    entry = vis.get("entry_request") or {}
+    if not isinstance(entry, dict):
+        return
+    # Map common LLM mistakes to canonical names (match EvidenceSubject / entry_requests.json)
+    if "zone_id" in entry and "sade_zone_id" not in entry:
+        entry["sade_zone_id"] = entry.pop("zone_id")
+    if "org_id" in entry and "organization_id" not in entry:
+        entry["organization_id"] = entry.pop("org_id")
+
+
 def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
     """
-    Parse the orchestrator's final output as JSON (v2 contract: decision + visibility).
+    Parse the orchestrator's final output as JSON (v2/v3 contract: decision + visibility).
 
     Tries raw JSON first, then a single ```json ... ``` code block.
+    Normalizes visibility.entry_request to use sade_zone_id and organization_id.
     Raises ValueError if no valid JSON object with "decision" is found.
     """
     text = raw.strip()
@@ -173,6 +188,11 @@ def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
     try:
         parsed = json.loads(text)
         if isinstance(parsed, dict) and "decision" in parsed:
+            _normalize_visibility(parsed)
+            try:
+                OrchestratorOutput.model_validate(parsed)
+            except Exception as e:
+                pass  # allow through; model is for documentation and optional strict validation
             return parsed
     except json.JSONDecodeError:
         pass
@@ -182,6 +202,11 @@ def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
         try:
             parsed = json.loads(match.group(1).strip())
             if isinstance(parsed, dict) and "decision" in parsed:
+                _normalize_visibility(parsed)
+                try:
+                    OrchestratorOutput.model_validate(parsed)
+                except Exception:
+                    pass
                 return parsed
         except json.JSONDecodeError:
             pass
@@ -225,7 +250,7 @@ async def main():
     with open("sade-mock-data/entry_requests.json", "r") as f:
         example_requests = json.load(f)
         
-    for request in example_requests:
+    for request in example_requests[:1]:
         print("=" * 70)
         print("SADE Entry Request Processing")
         print("=" * 70)
@@ -253,8 +278,12 @@ async def main():
 
             # You will need to get 'test_number' from outside this block. For now:
             test_number = request.get('sade_zone_id', 'result')  # fallback if no test number available
+            case_1 = "wind-visibility-good"
+            case_2 = "wind-visibility-medium"
+            case_3 = "wind-visibility-bad"
 
-            output_filename = f"results/entry_result_changed_wind_gust{test_number}.txt"
+            
+            output_filename = f"results/weather/{case_3}/entry_result_{test_number}.txt"
             with open(output_filename, "w") as f:
                 f.write("=" * 70 + "\n")
                 f.write("FINAL DECISION\n")
@@ -287,4 +316,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nInterrupted by user (Ctrl+C). Exiting.")
+        sys.exit(0)

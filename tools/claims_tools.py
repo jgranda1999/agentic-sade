@@ -154,6 +154,11 @@ def _retrieve_claims_impl(
             why_list.append(f"action '{action}' checked (mock)")
 
     satisfied = len(unsatisfied_actions) == 0
+    recommendation_prose = (
+        "All required actions satisfied." if satisfied
+        else f"Unsatisfied: {unsatisfied_actions}; resolved prefixes: {resolved_prefixes}."
+    )
+    why_prose = "; ".join(why_list[:10])
 
     return ClaimsAgentOutput(
         satisfied=satisfied,
@@ -161,6 +166,8 @@ def _retrieve_claims_impl(
         unresolved_incident_prefixes=unresolved_prefixes,
         satisfied_actions=satisfied_actions,
         unsatisfied_actions=unsatisfied_actions,
+        recommendation_prose=recommendation_prose,
+        why_prose=why_prose,
         why=why_list[:10],
     )
 

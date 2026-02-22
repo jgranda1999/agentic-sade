@@ -56,11 +56,35 @@ def _retrieveEnvironment_impl(
         light = "daylight"  # Default
     
     # Mock environmental conditions
-    raw_conditions = RawConditions(
-        wind=30.0,  # knots
-        wind_gust=40.0,  # knots
+    raw_conditions_wind_visibility_good = RawConditions(
+        wind=5.2,  # knots (typical for normal safe operations)
+        wind_gust=8.0,  # knots (modest gusts, within normal limits)
         precipitation="none",
-        visibility=10.0,  # nautical miles
+        visibility=10.0,  # nautical miles (good visibility)
+        light_conditions=light,
+        spatial_constraints=SpatialConstraints(
+            airspace_class="Class E",
+            no_fly_zones=[],
+            restricted_areas=[]
+        )
+    )
+    raw_conditions_wind_visibility_medium = RawConditions(
+        wind=10.2,  # knots (typical for normal safe operations)
+        wind_gust=12.0,  # knots (modest gusts, within normal limits)
+        precipitation="none",
+        visibility=6.0,  # nautical miles (good visibility)
+        light_conditions=light,
+        spatial_constraints=SpatialConstraints(
+            airspace_class="Class E",
+            no_fly_zones=[],
+            restricted_areas=[]
+        )
+    )
+    raw_conditions_wind_visibility_bad = RawConditions(
+        wind=20.0,  # knots (bad wind, close to or above many UAS limits)
+        wind_gust=22.0,  # knots (dangerous gusts, well above normal)
+        precipitation="moderate",  # must be one of: none, light, moderate, heavy
+        visibility=2.0,  # nautical miles (very poor visibility)
         light_conditions=light,
         spatial_constraints=SpatialConstraints(
             airspace_class="Class E",
@@ -73,7 +97,8 @@ def _retrieveEnvironment_impl(
     risk_level = "LOW"
     blocking_factors = []
     marginal_factors = []
-    
+    raw_conditions = raw_conditions_wind_visibility_bad
+
     if raw_conditions.wind_gust > 25:
         risk_level = "HIGH"
         blocking_factors.append("high_wind_gusts")
@@ -104,7 +129,7 @@ def _retrieveEnvironment_impl(
     if raw_conditions.wind_gust > 15:
         constraint_suggestions.append("MAX_ALTITUDE(300 m)")
 
-    # v2 visibility: recommendation (wind risk signal) and why
+    # v2/v3 visibility: recommendation (wind risk signal), prose, and why
     recommendation = risk_level
     why = [
         f"wind_steady_kt={raw_conditions.wind}",
@@ -115,12 +140,18 @@ def _retrieveEnvironment_impl(
         why.append(f"blocking_factors={blocking_factors}")
     if marginal_factors:
         why.append(f"marginal_factors={marginal_factors}")
+    recommendation_prose = (
+        f"Wind risk signal: {risk_level}. Steady wind {raw_conditions.wind} kt, gusts {raw_conditions.wind_gust} kt."
+    )
+    why_prose = "; ".join(why[:6])
 
     return EnvironmentAgentOutput(
         raw_conditions=raw_conditions,
         risk_assessment=risk_assessment,
         constraint_suggestions=constraint_suggestions,
         recommendation=recommendation,
+        recommendation_prose=recommendation_prose,
+        why_prose=why_prose,
         why=why[:6],
     )
 
