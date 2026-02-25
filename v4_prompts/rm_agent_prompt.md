@@ -60,6 +60,7 @@ You will receive a JSON STRING matching:
   "pilot_id": "string",
   "org_id": "string",
   "drone_id": "string",
+  "payload" : "string", 
   "entry_time": "ISO8601 datetime string",
   "request": { ... }
 }
