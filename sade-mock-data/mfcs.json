@@ -1,16 +1,4 @@
-{
-  "generated_at": "2026-02-21",
-  "units": {
-    "wind_speed": "m/s",
-    "temperature": "°C",
-    "altitude": "m",
-    "payload": "kg"
-  },
-  "notes": [
-    "Manufacturer flight constraints vary by model and firmware/region; values here are from published spec sheets/pages for common models.",
-    "payload_max_kg is external payload capacity. Many consumer drones are not designed for external payloads; those are set to null."
-  ],
-  "drones": [
+[
     {
       "drone_id": "DRONE-XYZ-001",
       "manufacturer": "Freefly Systems",
@@ -19,7 +7,8 @@
       "constraints": {
         "max_gross_takeoff_weight_kg": 34.9
       },
-      "payload_max_kg": 15.9
+      "payload_max_kg": 15.9,
+      "max_wind_kt": 19.4
     },
     {
       "drone_id": "DRONE-XYZ-002",
@@ -31,7 +20,8 @@
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 20.8
     },
     {
       "drone_id": "DRONE-XYZ-003",
@@ -43,7 +33,8 @@
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 23.3
     },
     {
       "drone_id": "DRONE-XYZ-004",
@@ -56,7 +47,8 @@
         "operating_temp_min_c": null,
         "operating_temp_max_c": null
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 23.3
     },
     {
       "drone_id": "DRONE-XYZ-005",
@@ -69,7 +61,8 @@
         "operating_temp_max_c": 50,
         "max_flight_altitude_m": 7000
       },
-      "payload_max_kg": 2.7
+      "payload_max_kg": 2.7,
+      "max_wind_kt": 23.3
     },
     {
       "drone_id": "DRONE-XYZ-006",
@@ -83,7 +76,8 @@
         "operating_temp_max_c": 40,
         "service_ceiling_m": 5000
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 23.3
     },
     {
       "drone_id": "DRONE-XYZ-007",
@@ -96,7 +90,8 @@
         "operating_temp_min_c": -20,
         "operating_temp_max_c": 50
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 23.3
     },
     {
       "drone_id": "DRONE-XYZ-008",
@@ -109,7 +104,8 @@
         "operating_temp_max_c": 40,
         "service_ceiling_ft_density_altitude": 15000
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 21.7
     },
     {
       "drone_id": "DRONE-XYZ-009",
@@ -123,7 +119,7 @@
         "operating_temp_max_c": 40,
         "service_ceiling_m": 5000
       },
-      "payload_max_kg": null
+      "payload_max_kg": null,
+      "max_wind_kt": 27.2
     }
   ]
-}
