@@ -97,7 +97,7 @@ def _retrieveEnvironment_impl(
     risk_level = "LOW"
     blocking_factors = []
     marginal_factors = []
-    raw_conditions = raw_conditions_wind_visibility_bad
+    raw_conditions = raw_conditions_wind_visibility_good
 
     if raw_conditions.wind_gust > 25:
         risk_level = "HIGH"

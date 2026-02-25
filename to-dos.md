@@ -1,11 +1,15 @@
 # To-Dos
-## uav_id
-- add uav_id field to all of the mock data
-    - uav_id will be mapped to its specific model specs in the mfcs mock data
-- add uav_id to all of the models.py contracts
-- add uav_id to all of the prompts
-- add uav_id to all of the sub-agents functions
-
+## drone_id standarization
+- add drone_id field to all of the mock data
+    - drone_id will be mapped to its specific model specs in the mfcs mock data
+        Done
+- add drone_id to all of the models.py contracts
+    Done 
+- add drone_id to all of the prompts
+    Done
+- add drone_id to all of the sub-agents functions
+    Done 
+    
 ## payload
 - Add payload for each entry in the Reputation Model mock data
 - Add payload to each entry_requests mock data
@@ -22,3 +26,4 @@
 ## Other
 - Test output of the new system
 - Create a GUI for presentation
+- Create function for env agent that actually gets current weather

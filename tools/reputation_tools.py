@@ -116,7 +116,7 @@ def parse_incident_code(incident_code: str) -> tuple[str, str, str, str]:
 
 def _load_reputation_sessions(pilot_id: str, drone_id: str) -> List[Dict[str, Any]]:
     """
-    Load sessions from sade-mock-data/reputation_model.json filtered by pilot_id and uav_id.
+    Load sessions from sade-mock-data/reputation_model.json filtered by pilot_id and drone_id.
     Returns list of session dicts (time_in, time_out, incidents, record_type, wind_steady_kt, wind_gusts_kt, etc.).
     """
     if not _REPUTATION_MODEL_PATH.exists():
@@ -126,7 +126,7 @@ def _load_reputation_sessions(pilot_id: str, drone_id: str) -> List[Dict[str, An
         return []
     return [
         s for s in raw
-        if s.get("pilot_id") == pilot_id and s.get("uav_id") == drone_id
+        if s.get("pilot_id") == pilot_id and s.get("drone_id") == drone_id
     ]
 
 
@@ -139,13 +139,13 @@ def _retrieve_reputations_impl(
     """
     Retrieve historical trust signals for a DPO trio from sade-mock-data/reputation_model.json.
 
-    Sessions are filtered by pilot_id and uav_id (drone_id). Entry_time is used as the
+    Sessions are filtered by pilot_id and drone_id. Entry_time is used as the
     reference date for "recent" incident count (last 30 days).
 
     Args:
         pilot_id: Pilot identifier (e.g. PILOT-12345)
         org_id: Organization identifier (not in JSON; kept for API shape)
-        drone_id: Drone identifier (e.g. DRONE-XYZ-001), matches uav_id in JSON
+        drone_id: Drone identifier (e.g. DRONE-XYZ-001), matches drone_id in JSON
         entry_time: Optional ISO8601 datetime for recent-incident window (default 2026-01-26)
 
     Returns:
@@ -300,7 +300,7 @@ def _retrieve_reputations_impl(
 def retrieve_reputations(input_json: str) -> ReputationAgentOutput:
     """
     Retrieve historical trust signals for a Drone|Pilot|Organization trio from
-    sade-mock-data/reputation_model.json. Sessions are filtered by pilot_id and uav_id (drone_id).
+    sade-mock-data/reputation_model.json. Sessions are filtered by pilot_id and drone_id.
 
     Args:
         input_json: JSON string with pilot_id, org_id, drone_id, entry_time, request

@@ -12,6 +12,17 @@
   ],
   "drones": [
     {
+      "drone_id": "DRONE-XYZ-001",
+      "manufacturer": "Freefly Systems",
+      "model": "ALTA X",
+      "category": "heavy-lift",
+      "constraints": {
+        "max_gross_takeoff_weight_kg": 34.9
+      },
+      "payload_max_kg": 15.9
+    },
+    {
+      "drone_id": "DRONE-XYZ-002",
       "manufacturer": "DJI",
       "model": "Mini 4 Pro",
       "category": "consumer",
@@ -23,6 +34,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-003",
       "manufacturer": "DJI",
       "model": "Air 3",
       "category": "consumer",
@@ -34,6 +46,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-004",
       "manufacturer": "DJI",
       "model": "Mavic 3 Enterprise (M3E Series)",
       "category": "enterprise",
@@ -46,6 +59,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-005",
       "manufacturer": "DJI",
       "model": "Matrice 350 RTK",
       "category": "enterprise",
@@ -58,6 +72,7 @@
       "payload_max_kg": 2.7
     },
     {
+      "drone_id": "DRONE-XYZ-006",
       "manufacturer": "Autel Robotics",
       "model": "EVO II Pro V3",
       "category": "consumer/prosumer",
@@ -71,6 +86,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-007",
       "manufacturer": "Autel Robotics",
       "model": "EVO Max 4T",
       "category": "enterprise",
@@ -83,6 +99,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-008",
       "manufacturer": "Skydio",
       "model": "Skydio 2+",
       "category": "consumer/prosumer",
@@ -95,6 +112,7 @@
       "payload_max_kg": null
     },
     {
+      "drone_id": "DRONE-XYZ-009",
       "manufacturer": "Parrot",
       "model": "ANAFI Ai",
       "category": "enterprise",
@@ -106,15 +124,6 @@
         "service_ceiling_m": 5000
       },
       "payload_max_kg": null
-    },
-    {
-      "manufacturer": "Freefly Systems",
-      "model": "ALTA X",
-      "category": "heavy-lift",
-      "constraints": {
-        "max_gross_takeoff_weight_kg": 34.9
-      },
-      "payload_max_kg": 15.9
     }
   ]
 }

@@ -30,8 +30,8 @@ def _load_user_claims(drone_id: str) -> List[Dict[str, Any]]:
     raw = json.loads(_USER_INPUT_PATH.read_text())
     if not isinstance(raw, list):
         return []
-    # Filter by drone (field is "drones" in the JSON)
-    records = [r for r in raw if r.get("drones") == drone_id]
+    # Filter by drone (field is "drone_id" in the JSON)
+    records = [r for r in raw if r.get("drone_id") == drone_id]
     # Sort by date (MM/DD/YYYY)
     def parse_date(r: Dict[str, Any]) -> datetime:
         s = r.get("date", "")

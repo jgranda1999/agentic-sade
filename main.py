@@ -35,7 +35,7 @@ def load_prompt(prompt_file: str, prompts_dir: str = "prompts") -> str:
 ORCHESTRATOR_PROMPT = load_prompt("orchestrator_prompt.md", prompts_dir="v4_prompts")
 ENVIRONMENT_AGENT_PROMPT = load_prompt("env_agent_prompt.md", prompts_dir="v4_prompts")
 REPUTATION_AGENT_PROMPT = load_prompt("rm_agent_prompt.md", prompts_dir="v4_prompts")
-ACTION_REQUIRED_AGENT_PROMPT = load_prompt("action_required_agent_prompt.md")
+# ACTION_REQUIRED_AGENT_PROMPT = load_prompt("action_required_agent_prompt.md")
 CLAIMS_AGENT_PROMPT = load_prompt("claims_agent_prompt.md", prompts_dir="v4_prompts")
 
 
@@ -57,13 +57,13 @@ reputation_agent = Agent(
     handoff_description="Retrieves historical trust and reliability signals (pilot, organization, drone reputation and incidents) and makes a recommendation based on the reputation data",
 )
 
-action_required_agent = Agent(
-    name="action_required_agent",
-    instructions=ACTION_REQUIRED_AGENT_PROMPT,
-    output_type=ActionRequiredAgentOutput,
-    tools=[request_attestation],
-    handoff_description="Interfaces with SafeCert to request and retrieve formal evidence attestations",
-)
+# action_required_agent = Agent(
+#     name="action_required_agent",
+#     instructions=ACTION_REQUIRED_AGENT_PROMPT,
+#     output_type=ActionRequiredAgentOutput,
+#     tools=[request_attestation],
+#     handoff_description="Interfaces with SafeCert to request and retrieve formal evidence attestations",
+# )
 
 claims_agent = Agent(
     name="claims_agent",
@@ -96,15 +96,15 @@ orchestrator_agent = Agent(
                 "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, orchestration fields."
             ),
         ),
-        action_required_agent.as_tool(
-            tool_name="request_attestation",
-            tool_description=(
-                "Request evidence attestations from SafeCert. "
-                "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, safecert_pin, evidence_required. "
-                "Returns: ActionRequiredAgentOutput (validated Pydantic model) with satisfied (boolean) and attestation. "
-                "Only call this when ACTION-REQUIRED decision has been issued."
-            ),
-        ),
+        # action_required_agent.as_tool(
+        #     tool_name="request_attestation",
+        #     tool_description=(
+        #         "Request evidence attestations from SafeCert. "
+        #         "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, safecert_pin, evidence_required. "
+        #         "Returns: ActionRequiredAgentOutput (validated Pydantic model) with satisfied (boolean) and attestation. "
+        #         "Only call this when ACTION-REQUIRED decision has been issued."
+        #     ),
+        # ),
         claims_agent.as_tool(
             tool_name="claims_agent",
             tool_description=(
@@ -278,12 +278,19 @@ async def main():
 
             # You will need to get 'test_number' from outside this block. For now:
             test_number = request.get('sade_zone_id', 'result')  # fallback if no test number available
-            case_1 = "wind-visibility-good"
-            case_2 = "wind-visibility-medium"
-            case_3 = "wind-visibility-bad"
+
+            # Case names
+            # wind visibility good, medium, bad
+            case_1 = "weather/wind-visibility-good"
+            case_2 = "weather/wind-visibility-medium"
+            case_3 = "weather/wind-visibility-bad"
+            # mfc payload
+            case_4 = "mfc-payload/mfc-payload-good"
+            case_5 = "mfc-payload/mfc-payload-medium"
+            case_6 = "mfc-payload/mfc-payload-bad"
 
             
-            output_filename = f"results/weather/{case_3}/entry_result_{test_number}.txt"
+            output_filename = f"results/{case_4}/entry_result_{test_number}.txt"
             with open(output_filename, "w") as f:
                 f.write("=" * 70 + "\n")
                 f.write("FINAL DECISION\n")
