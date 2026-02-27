@@ -295,7 +295,7 @@ async def main():
             case_6 = "mfc-payload/mfc-payload-bad"
 
             
-            output_filename = f"results/{case_4}/entry_result_{test_number}.txt"
+            output_filename = f"results/{case_5}/entry_result_{test_number}.txt"
             with open(output_filename, "w") as f:
                 f.write("=" * 70 + "\n")
                 f.write("FINAL DECISION\n")

@@ -64,10 +64,10 @@ def _retrieveEnvironment_impl(
 
     # Test case: medium conditions (elevated wind/visibility)
     raw_conditions_wind_visibility_medium = RawConditions(
-        wind=10.2,
-        wind_gust=12.0,
+        wind=14.2,
+        wind_gust=17.0,
         precipitation="none",
-        visibility=6.0,
+        visibility=3.0,
         light_conditions=light,
         spatial_constraints=spatial,
     )
@@ -82,11 +82,11 @@ def _retrieveEnvironment_impl(
         spatial_constraints=spatial,
     )
 
-    if env_profile == "medium":
-        return raw_conditions_wind_visibility_medium
-    if env_profile == "bad":
-        return raw_conditions_wind_visibility_bad
-    return raw_conditions_wind_visibility_good
+    # if env_profile == "medium":
+    #     return raw_conditions_wind_visibility_medium
+    # if env_profile == "bad":
+    #     return raw_conditions_wind_visibility_bad
+    return raw_conditions_wind_visibility_medium
 
 
 def _retrieveMFC_impl(drone_id: str) -> ManufacturerFC:

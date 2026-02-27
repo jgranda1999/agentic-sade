@@ -64,6 +64,11 @@ You MUST in the same run:
 Never emit a final decision before calling claims_agent and completing STATE 5
 when the initial decision was ACTION-REQUIRED.
 
+EXCEPTION — DENIED exits in STATE 3:
+If STATE 3 yields DENIED (rules 1–5), skip STATE 4 entirely.
+Do NOT call claims_agent. Do NOT evaluate any further STATE 3 rules.
+Proceed directly to STATE 6 and emit the DENIED decision.
+
 ============================================================
 TOOL COMMUNICATION PROTOCOL (MANDATORY)
 ============================================================
@@ -259,22 +264,27 @@ Apply rules IN ORDER:
    as a number:
    → DENIED
    denial_code: "MFC_DATA_UNAVAILABLE"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
 2️⃣ If payload_kg is missing or could not be parsed as a number:
    → DENIED
    denial_code: "INVALID_PAYLOAD_WEIGHT"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
 3️⃣ If payload_kg > mfc_payload_max:
    → DENIED
    denial_code: "PAYLOAD_EXCEEDS_MFC_MAX"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
 4️⃣ If wind_now_kt > mfc_wind_max OR gust_now_kt > mfc_wind_max:
    → DENIED
    denial_code: "WIND_EXCEEDS_MFC_MAX"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
 5️⃣ If exceeds_large:
    → DENIED
    denial_code: "WIND_EXCEEDS_DEMONSTRATED_CAPABILITY"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
 6️⃣ If has_high_sev:
 → ACTION-REQUIRED
