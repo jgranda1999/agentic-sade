@@ -152,12 +152,13 @@ COMPUTATION RULES (risk_assessment, recommendation, why)
 
 Use only the tools' manufactuer_fc and raw_conditions as inputs. Do not invent numbers or units.
 
-gust > mfc_max_wind_kt → HIGH, payload > mfc_payload_max_kg → HIGH, visibility < 3 → blocking
-
 Risk assessment (compute from manufacturer_fc and raw_conditions):
-- gust > mfc_max_wind_kt kt → risk_level HIGH, blocking_factors include "high_wind_greater_than_mfc_max"
-- gust > 5 kt → risk_level MEDIUM (or elevate), marginal_factors include "elevated_wind_gusts"
+- You MUST apply ALL applicable rules below and set risk_level to the HIGHEST severity triggered (HIGH > MEDIUM > LOW). Do not downgrade or average multiple rules.
+- wind_gust > mfc_max_wind_kt kt → risk_level HIGH, blocking_factors include "high_wind_greater_than_mfc_max"
+- wind_gust > 5 kt → risk_level MEDIUM (or elevate), marginal_factors include "elevated_wind_gusts"
+- If wind_gust is within 3 kt of mfc_max_wind_kt (mfc_max_wind_kt - wind_gust ≤ 3.0) AND wind_gust ≤ mfc_max_wind_kt, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "near_mfc_max_wind_limit"
 - payload > mfc_payload_max_kg → risk_level HIGH, blocking_factors include "high_payload_greater_than_mfc_max"
+- If payload is within 2 kg of mfc_payload_max_kg (mfc_payload_max_kg - payload ≤ 2.0) AND payload ≤ mfc_payload_max_kg, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "near_mfc_max_payload_limit"
 - payload > 5 kg → risk_level MEDIUM (or elevate), marginal_factors include "elevated_payload_weight"
 - visibility < 3 nm → risk_level HIGH, blocking_factors include "low_visibility"
 - visibility < 5 nm → marginal_factors include "reduced_visibility"

@@ -4,7 +4,7 @@ FINAL DECISION
 Type: APPROVED-CONSTRAINTS
 SADE Message: APPROVED-CONSTRAINTS,(SPEED_LIMIT(7m/s),MAX_ALTITUDE(30m))
 Constraints: ['SPEED_LIMIT(7m/s)', 'MAX_ALTITUDE(30m)']
-Explanation: Approved with constraints: Wind conditions are near demonstrated or MFC envelope (wind/gust 14.2/17.0kt vs demo 15.0kt vs MFC 19.4kt). Reputation agent shows required high severity incident actions have been satisfied per claims agent. Constraints applied due to proximity to envelope.
+Explanation: Approved with constraints: wind and gusts are near the demonstrated/gust capability envelope; high-severity incident resolution for prefix 0011 verified by Claims Agent; constraints applied for safety margin. Environment Agent: wind within MFC but gusts elevated. Reputation Agent: historical risk high, pattern of prior incidents, claims satisfied for high-severity incident mitigation.
 ======================================================================
 
 Full output (decision + visibility):
@@ -19,7 +19,7 @@ Full output (decision + visibility):
     "action_id": null,
     "actions": [],
     "denial_code": null,
-    "explanation": "Approved with constraints: Wind conditions are near demonstrated or MFC envelope (wind/gust 14.2/17.0kt vs demo 15.0kt vs MFC 19.4kt). Reputation agent shows required high severity incident actions have been satisfied per claims agent. Constraints applied due to proximity to envelope."
+    "explanation": "Approved with constraints: wind and gusts are near the demonstrated/gust capability envelope; high-severity incident resolution for prefix 0011 verified by Claims Agent; constraints applied for safety margin. Environment Agent: wind within MFC but gusts elevated. Reputation Agent: historical risk high, pattern of prior incidents, claims satisfied for high-severity incident mitigation."
   },
   "visibility": {
     "entry_request": {
@@ -27,7 +27,7 @@ Full output (decision + visibility):
       "pilot_id": "PILOT-12345",
       "organization_id": "ORG-ABC",
       "drone_id": "DRONE-XYZ-001",
-      "payload": "2.0",
+      "payload": "10.0",
       "requested_entry_time": "2026-02-02T10:00:00Z",
       "request_type": "ZONE"
     },
@@ -52,27 +52,34 @@ Full output (decision + visibility):
         }
       },
       "risk_assessment": {
-        "risk_level": "LOW",
+        "risk_level": "MEDIUM",
         "blocking_factors": [],
-        "marginal_factors": []
+        "marginal_factors": [
+          "elevated_wind_gusts",
+          "elevated_payload_weight"
+        ]
       },
-      "constraint_suggestions_wind": [],
+      "constraint_suggestions_wind": [
+        "SPEED_LIMIT(17kt)"
+      ],
       "constraint_suggestions_payload": [],
-      "recommendation_wind": "LOW",
-      "recommendation_payload": "LOW",
-      "recommendation_prose_wind": "",
-      "recommendation_prose_payload": "",
-      "why_prose_wind": "",
-      "why_prose_payload": "",
+      "recommendation_wind": "MEDIUM",
+      "recommendation_payload": "MEDIUM",
+      "recommendation_prose_wind": "Wind gusts are elevated but remain below the MFC maximum wind limit. Risk is medium due to increased gusts.",
+      "recommendation_prose_payload": "Payload is above 5 kg and may require caution but is below the MFC payload limit. Risk is medium.",
+      "why_prose_wind": "Measured gusts at 17.0 kt are above the threshold for medium risk (5 kt) and well below the MFC maximum (19.4 kt), making wind risk medium.",
+      "why_prose_payload": "Submitted payload is 10.0 kg, which exceeds the medium-risk threshold of 5 kg but remains below the MFC maximum payload (15.9 kg). Payload risk is medium.",
       "why_wind": [
         "wind_gust_kt=17.0",
         "mfc_max_wind_kt=19.4",
-        "risk_level=LOW"
+        "risk_level=MEDIUM",
+        "elevated_wind_gusts"
       ],
       "why_payload": [
-        "payload_kg=2.0",
+        "payload_kg=10.0",
         "mfc_payload_max_kg=15.9",
-        "risk_level=LOW"
+        "risk_level=MEDIUM",
+        "elevated_payload_weight"
       ]
     },
     "reputation_agent": {
@@ -154,8 +161,8 @@ Full output (decision + visibility):
       "called": true,
       "satisfied": true,
       "resolved_incident_prefixes": [
-        "0101",
         "0100",
+        "0101",
         "0011"
       ],
       "unresolved_incident_prefixes": [],
@@ -163,15 +170,16 @@ Full output (decision + visibility):
         "RESOLVE_HIGH_SEVERITY_INCIDENTS"
       ],
       "unsatisfied_actions": [],
-      "recommendation_prose": "All required actions related to the resolution of high-severity incidents have been satisfied. Verified follow-up and mitigation exist for all required high-severity incident prefixes: 0101, 0100, and 0011. No further actions remain outstanding for this requirement.",
-      "why_prose": "Verified follow-up for high-severity incidents with prefix 0011 was found, satisfying the required action. All required high-severity incident prefixes have validated resolution according to SADE records.",
+      "recommendation_prose": "All required actions have been satisfied. The operator provided verified follow-up for all high-severity incidents, including prefix 0011.",
+      "why_prose": "Verified follow-up for high-severity incident prefixes was found in the records, specifically for prefix 0011, fulfilling the required actions.",
       "why": [
         "verified follow-up for high-severity prefix(es) ['0011'] (from sade-mock-data)"
       ]
     },
     "rule_trace": [
       "STATE_3_RULE_HIGH_SEV_INCIDENT",
-      "STATE_5_RULE_CLAIMS_SATISFIED_NEAR_ENVELOPE"
+      "STATE_5_RULE_CLAIMS_SATISFIED",
+      "STATE_5_RULE_NEAR_ENVELOPE"
     ]
   }
 }

@@ -168,6 +168,7 @@ STRICT RULES:
 - For environment_agent: you MUST include recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, and why_prose_payload in visibility, copied from the tool response (use empty string "" if the tool did not return them). For reputation_agent: you MUST include recommendation_prose and why_prose in visibility, copied from the tool response (use empty string "" if the tool did not return them).
 - For claims_agent (when called): you MUST include recommendation_prose and why_prose in visibility, copied from the tool response.
 - When STATE 3 yields ACTION-REQUIRED, you must call claims_agent in this run and complete STATE 5 before emitting any final output.
+- HARD CONSTRAINT: It is INVALID to emit a final decision with decision.type == "ACTION-REQUIRED" AND visibility.claims_agent.called == false. In that case you MUST continue the run: call claims_agent, apply STATE 5, then emit the final decision from STATE 6 (which may still be ACTION-REQUIRED only via STATE 5.4).
 - sade_message must EXACTLY match:
 
   APPROVED

@@ -74,8 +74,8 @@ def _retrieveEnvironment_impl(
 
     # Test case: bad conditions (high wind, poor visibility)
     raw_conditions_wind_visibility_bad = RawConditions(
-        wind=20.0,
-        wind_gust=22.0,
+        wind=22.0,
+        wind_gust=24.0,
         precipitation="moderate",
         visibility=2.0,
         light_conditions=light,
@@ -86,7 +86,7 @@ def _retrieveEnvironment_impl(
     #     return raw_conditions_wind_visibility_medium
     # if env_profile == "bad":
     #     return raw_conditions_wind_visibility_bad
-    return raw_conditions_wind_visibility_medium
+    return raw_conditions_wind_visibility_bad
 
 
 def _retrieveMFC_impl(drone_id: str) -> ManufacturerFC:

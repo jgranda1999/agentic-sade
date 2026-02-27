@@ -198,6 +198,14 @@ def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
                 OrchestratorOutput.model_validate(parsed)
             except Exception as e:
                 pass  # allow through; model is for documentation and optional strict validation
+            # Guardrail: ACTION-REQUIRED requires claims_agent.called == True
+            decision = parsed.get("decision", {})
+            vis = parsed.get("visibility", {})
+            claims = vis.get("claims_agent", {}) if isinstance(vis, dict) else {}
+            if decision.get("type") == "ACTION-REQUIRED" and not claims.get("called", False):
+                raise ValueError(
+                    "Invalid orchestrator output: ACTION-REQUIRED decision without claims_agent.called == true"
+                )
             return parsed
     except json.JSONDecodeError:
         pass
@@ -212,6 +220,14 @@ def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
                     OrchestratorOutput.model_validate(parsed)
                 except Exception:
                     pass
+                # Guardrail: ACTION-REQUIRED requires claims_agent.called == True
+                decision = parsed.get("decision", {})
+                vis = parsed.get("visibility", {})
+                claims = vis.get("claims_agent", {}) if isinstance(vis, dict) else {}
+                if decision.get("type") == "ACTION-REQUIRED" and not claims.get("called", False):
+                    raise ValueError(
+                        "Invalid orchestrator output: ACTION-REQUIRED decision without claims_agent.called == true"
+                    )
                 return parsed
         except json.JSONDecodeError:
             pass
@@ -295,7 +311,7 @@ async def main():
             case_6 = "mfc-payload/mfc-payload-bad"
 
             
-            output_filename = f"results/{case_5}/entry_result_{test_number}.txt"
+            output_filename = f"results/{case_6}/entry_result_{test_number}.txt"
             with open(output_filename, "w") as f:
                 f.write("=" * 70 + "\n")
                 f.write("FINAL DECISION\n")

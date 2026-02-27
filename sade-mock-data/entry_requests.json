@@ -6,7 +6,7 @@
     "drone_id": "DRONE-XYZ-001",
     "requested_entry_time": "2026-02-02T10:00:00Z",
     "request_type": "ZONE",
-    "payload": "2.0"
+    "payload": "16.0"
   },
   {
     "sade_zone_id": "ZONE-002",

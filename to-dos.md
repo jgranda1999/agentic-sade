@@ -39,4 +39,7 @@
     - Done
 - Create a GUI for presentation
     - pyQt5
+        -Done 
+- Refine output
+- Practice Presentation 
 - Create function for env agent that actually gets current weather

@@ -3,7 +3,7 @@ FINAL DECISION
 ======================================================================
 Type: APPROVED
 SADE Message: APPROVED
-Explanation: Approved: wind and gusts are well within both manufacturer and demonstrated limits (steady 5.2 kt, gust 8.0 kt vs env caps 15.0/19.4 kt), payload is compliant, no unresolved high-severity incidents, and all claims agent checks were satisfied.
+Explanation: Approved: Wind is well within both MFC and demonstrated operational envelope (steady 5.2 kt, gust 8.0 kt, MFC max wind 19.4 kt, demo max 15.0 kt). Payload (2.0 kg) is below manufacturer maximum (15.9 kg). No unresolved high severity or follow-up incidents. All required high severity incidents have been resolved as confirmed by Claims Agent.
 ======================================================================
 
 Full output (decision + visibility):
@@ -15,7 +15,7 @@ Full output (decision + visibility):
     "action_id": null,
     "actions": [],
     "denial_code": null,
-    "explanation": "Approved: wind and gusts are well within both manufacturer and demonstrated limits (steady 5.2 kt, gust 8.0 kt vs env caps 15.0/19.4 kt), payload is compliant, no unresolved high-severity incidents, and all claims agent checks were satisfied."
+    "explanation": "Approved: Wind is well within both MFC and demonstrated operational envelope (steady 5.2 kt, gust 8.0 kt, MFC max wind 19.4 kt, demo max 15.0 kt). Payload (2.0 kg) is below manufacturer maximum (15.9 kg). No unresolved high severity or follow-up incidents. All required high severity incidents have been resolved as confirmed by Claims Agent."
   },
   "visibility": {
     "entry_request": {
@@ -48,24 +48,23 @@ Full output (decision + visibility):
         }
       },
       "risk_assessment": {
-        "risk_level": "MEDIUM",
+        "risk_level": "LOW",
         "blocking_factors": [],
-        "marginal_factors": [
-          "elevated_wind_gusts"
-        ]
+        "marginal_factors": []
       },
       "constraint_suggestions_wind": [],
       "constraint_suggestions_payload": [],
-      "recommendation_wind": "MEDIUM",
+      "recommendation_wind": "LOW",
       "recommendation_payload": "LOW",
-      "recommendation_prose_wind": "Elevated wind gusts detected, though within manufacturer constraints; exercise caution.",
-      "recommendation_prose_payload": "Payload is low compared to the drone's maximum allowed capacity.",
-      "why_prose_wind": "Wind gusts at 8.0 kt are above the elevated risk threshold of 5 kt, but below MFC max gust (19.4 kt).",
-      "why_prose_payload": "Payload of 2.0 kg is well below the maximum allowed payload of 15.9 kg for this drone.",
+      "recommendation_prose_wind": "Wind gusts and steady wind are well below the MFC maximum for this aircraft.",
+      "recommendation_prose_payload": "Payload is far below the MFC payload maximum for this aircraft.",
+      "why_prose_wind": "Wind gust is 8.0 kt, well under the MFC max wind of 19.4 kt.",
+      "why_prose_payload": "Payload is 2.0 kg, which is much less than the MFC max of 15.9 kg.",
       "why_wind": [
+        "wind_kt=5.2",
         "wind_gust_kt=8.0",
         "mfc_max_wind_kt=19.4",
-        "risk_level=MEDIUM"
+        "risk_level=LOW"
       ],
       "why_payload": [
         "payload_kg=2.0",
@@ -152,24 +151,24 @@ Full output (decision + visibility):
       "called": true,
       "satisfied": true,
       "resolved_incident_prefixes": [
-        "0011",
+        "0100",
         "0101",
-        "0100"
+        "0011"
       ],
       "unresolved_incident_prefixes": [],
       "satisfied_actions": [
         "RESOLVE_HIGH_SEVERITY_INCIDENTS"
       ],
       "unsatisfied_actions": [],
-      "recommendation_prose": "All required actions have been satisfied. Follow-up reports have been verified for the high-severity incidents (prefixes: 0011, 0101, 0100). No outstanding actions remain for this requirement.",
-      "why_prose": "Verified follow-up reports were found for all required high-severity incident prefixes, fulfilling the specified actions.",
+      "recommendation_prose": "The operator has resolved all required high-severity incidents (prefixes 0011, 0100, 0101); no outstanding actions remain for this claim.",
+      "why_prose": "Verified follow-up reports exist for all required high-severity incident prefixes, specifically 0011, as per verified records.",
       "why": [
         "verified follow-up for high-severity prefix(es) ['0011'] (from sade-mock-data)"
       ]
     },
     "rule_trace": [
       "STATE_3_RULE_HIGH_SEV_INCIDENT",
-      "STATE_5_RULE_CLAIMS_SATISFIED_AND_APPROVED"
+      "STATE_5_RULE_CLAIMS_SATISFIED"
     ]
   }
 }

@@ -81,23 +81,25 @@ def _badge_html(text: str, color: str) -> str:
 def _section_html(title: str, rows: List[Tuple[str, str]], badge_map: Dict[str, str] = None) -> str:
     badge_map = badge_map or {}
     html = (
-        f'<div style="margin-bottom:14px;">'
-        f'<div style="font-size:12px;font-weight:700;color:{ACCENT};'
-        f'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">'
+        f'<div style="margin-bottom:22px;">'
+        f'<div style="font-size:11px;font-weight:700;color:{ACCENT};'
+        f'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;">'
         f"{title}</div>"
+        f'<table cellspacing="0" cellpadding="0" width="100%">'
     )
     for key, val in rows:
         if key in badge_map:
             val_html = _badge_html(val, badge_map[key])
         else:
-            val_html = f'<span style="color:{TXT_HI}">{val}</span>'
+            val_html = f'<span style="color:{TXT_HI};">{val}</span>'
         html += (
-            f'<div style="display:flex;justify-content:space-between;'
-            f'margin-bottom:3px;">'
-            f'<span style="color:{TXT_MED};min-width:180px;">{key}</span>'
-            f'{val_html}</div>'
+            f'<tr>'
+            f'<td style="color:{TXT_MED};width:200px;padding:4px 20px 4px 0;'
+            f'vertical-align:top;white-space:nowrap;">{key}</td>'
+            f'<td style="padding:4px 0;vertical-align:top;">{val_html}</td>'
+            f'</tr>'
         )
-    html += "</div>"
+    html += "</table></div>"
     return html
 
 
@@ -105,13 +107,13 @@ def _list_html(title: str, items: List[str], color: str = TXT_HI) -> str:
     if not items:
         return _section_html(title, [("(none)", "")])
     html = (
-        f'<div style="margin-bottom:14px;">'
-        f'<div style="font-size:12px;font-weight:700;color:{ACCENT};'
-        f'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">'
+        f'<div style="margin-bottom:22px;">'
+        f'<div style="font-size:11px;font-weight:700;color:{ACCENT};'
+        f'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;">'
         f"{title}</div>"
     )
     for item in items:
-        html += f'<div style="color:{color};margin-bottom:2px;">• {item}</div>'
+        html += f'<div style="color:{color};margin-bottom:6px;line-height:1.5;">• {item}</div>'
     html += "</div>"
     return html
 
@@ -120,24 +122,24 @@ def _prose_html(title: str, text: str) -> str:
     if not text:
         return ""
     return (
-        f'<div style="margin-bottom:14px;">'
-        f'<div style="font-size:12px;font-weight:700;color:{ACCENT};'
-        f'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">'
+        f'<div style="margin-bottom:22px;">'
+        f'<div style="font-size:11px;font-weight:700;color:{ACCENT};'
+        f'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;">'
         f"{title}</div>"
-        f'<div style="color:{TXT_HI};line-height:1.5;">{text}</div>'
+        f'<div style="color:{TXT_HI};line-height:1.7;">{text}</div>'
         f"</div>"
     )
 
 
 def _hr() -> str:
-    return f'<hr style="border:none;border-top:1px solid {BORDER};margin:12px 0;">'
+    return f'<hr style="border:none;border-top:1px solid {BORDER};margin:18px 0;">'
 
 
 def _wrap(inner: str) -> str:
     return (
         f'<html><body style="background:{CARD_BG};color:{TXT_HI};'
         f'font-family:\'Segoe UI\',system-ui,sans-serif;font-size:13px;'
-        f'margin:16px;line-height:1.4;">'
+        f'margin:22px 24px;line-height:1.6;">'
         f"{inner}"
         f"</body></html>"
     )
@@ -425,7 +427,7 @@ class HtmlView(QTextEdit):
                 color: {TXT_HI};
                 border: 1px solid {BORDER};
                 border-radius: 6px;
-                padding: 8px;
+                padding: 12px;
                 font-family: 'Segoe UI', system-ui, sans-serif;
                 font-size: 13px;
             }}
@@ -550,8 +552,8 @@ def build_rep_tab(data: Dict[str, Any]) -> str:
     # Incidents table
     if incidents:
         html += (
-            f'<div style="font-size:12px;font-weight:700;color:{ACCENT};'
-            f'text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Incidents</div>'
+            f'<div style="font-size:11px;font-weight:700;color:{ACCENT};'
+            f'text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;">Incidents</div>'
         )
         for inc in incidents:
             sev   = inc.get("severity", "")
@@ -560,14 +562,17 @@ def build_rep_tab(data: Dict[str, Any]) -> str:
             rc    = C_APPROVED if res else C_DENIED
             html += (
                 f'<div style="background:{PANEL_BG};border:1px solid {BORDER};'
-                f'border-radius:6px;padding:8px;margin-bottom:6px;">'
-                f'<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
-                f'<span style="color:{TXT_HI};font-weight:600;">{inc.get("incident_code","")}</span>'
+                f'border-radius:6px;padding:12px 14px;margin-bottom:10px;">'
+                f'<table cellspacing="0" cellpadding="0" width="100%"'
+                f' style="margin-bottom:6px;"><tr>'
+                f'<td style="color:{TXT_HI};font-weight:600;vertical-align:middle;">'
+                f'{inc.get("incident_code","")}</td>'
+                f'<td style="text-align:right;vertical-align:middle;white-space:nowrap;">'
                 f'{_badge_html(sev, sc)}&nbsp;{_badge_html("RESOLVED" if res else "UNRESOLVED", rc)}'
-                f'</div>'
-                f'<div style="color:{TXT_MED};font-size:12px;">'
+                f'</td></tr></table>'
+                f'<div style="color:{TXT_MED};font-size:12px;margin-bottom:4px;">'
                 f'{inc.get("incident_category","")} › {inc.get("incident_subcategory","")}</div>'
-                f'<div style="color:{TXT_LO};font-size:11px;margin-top:2px;">'
+                f'<div style="color:{TXT_LO};font-size:11px;">'
                 f'{inc.get("date","")}</div>'
                 f'</div>'
             )
@@ -702,11 +707,12 @@ class DetailTabs(QTabWidget):
             QTabBar::tab {{
                 background: {PANEL_BG};
                 color: {TXT_MED};
-                padding: 8px 18px;
+                padding: 10px 22px;
                 border: 1px solid {BORDER};
                 border-bottom: none;
                 border-radius: 5px 5px 0 0;
                 font-size: 12px;
+                margin-right: 2px;
             }}
             QTabBar::tab:selected {{
                 background: {CARD_BG};
@@ -833,7 +839,8 @@ class SADEWindow(QMainWindow):
         left.setMinimumWidth(280)
         left.setStyleSheet(f"background: {PANEL_BG};")
         ll = QVBoxLayout(left)
-        ll.setContentsMargins(12, 12, 12, 12)
+        ll.setContentsMargins(16, 16, 16, 16)
+        ll.setSpacing(10)
 
         diag_label = QLabel("Agent Architecture")
         diag_label.setStyleSheet(
@@ -857,7 +864,7 @@ class SADEWindow(QMainWindow):
         right = QWidget()
         right.setStyleSheet(f"background: {BG};")
         rl = QVBoxLayout(right)
-        rl.setContentsMargins(8, 12, 12, 12)
+        rl.setContentsMargins(12, 14, 14, 12)
 
         self.tabs = DetailTabs()
         rl.addWidget(self.tabs, 1)
@@ -879,18 +886,20 @@ class SADEWindow(QMainWindow):
         bar.setStyleSheet(
             f"background:{PANEL_BG};border-bottom:1px solid {BORDER};"
         )
-        bar.setFixedHeight(52)
+        bar.setFixedHeight(60)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(16, 0, 16, 0)
+        layout.setContentsMargins(20, 0, 20, 0)
+        layout.setSpacing(10)
 
         # title
-        title = QLabel("SADE")
+        title = QLabel("SADE-ZONE")
         title.setStyleSheet(
             f"color:{ACCENT};font-size:18px;font-weight:900;letter-spacing:2px;"
         )
-        sub = QLabel("System for Autonomous Decision Evaluation")
+        sub = QLabel("System for Entry Decision Evaluation for UAVs")
         sub.setStyleSheet(f"color:{TXT_MED};font-size:11px;")
         layout.addWidget(title)
+        layout.addSpacing(4)
         layout.addWidget(sub)
         layout.addStretch()
 

@@ -2,21 +2,21 @@
 FINAL DECISION
 ======================================================================
 Type: DENIED
-SADE Message: DENIED,WIND_EXCEEDS_MFC_MAX,Explanation
+SADE Message: DENIED,WIND_EXCEEDS_MFC_MAX,Wind now or gust exceeds manufacturer max wind; raw wind=22.0 kt, gust=24.0 kt, MFC max=19.4 kt.
 Denial Code: WIND_EXCEEDS_MFC_MAX
-Explanation: Denied: The observed steady wind (20.0 kt) and gust (22.0 kt) both exceed the manufacturer's maximum wind rating (19.4 kt). This presents a significant operational risk (Environment Agent: wind=20.0kt, wind_gust=22.0kt, mfc_max_wind_kt=19.4, gust exceeds manufacturer maximum). Additionally, high-severity incidents are present (Reputation Agent: unresolved_high_severity_incident), but the manufacturer constraint alone is a blocking factor. Claims Agent was not called per rule 4.
+Explanation: Denied: The Environment Agent shows current wind (22.0 kt) and gust (24.0 kt) both exceed the manufacturer max wind (19.4 kt). No further evaluation performed as this is a hard constraint. Reputation Agent also identified high risk and unresolved high-severity and medium-severity incidents, but wind limitation alone results in denial per policy.
 ======================================================================
 
 Full output (decision + visibility):
 {
   "decision": {
     "type": "DENIED",
-    "sade_message": "DENIED,WIND_EXCEEDS_MFC_MAX,Explanation",
+    "sade_message": "DENIED,WIND_EXCEEDS_MFC_MAX,Wind now or gust exceeds manufacturer max wind; raw wind=22.0 kt, gust=24.0 kt, MFC max=19.4 kt.",
     "constraints": [],
     "action_id": null,
     "actions": [],
     "denial_code": "WIND_EXCEEDS_MFC_MAX",
-    "explanation": "Denied: The observed steady wind (20.0 kt) and gust (22.0 kt) both exceed the manufacturer's maximum wind rating (19.4 kt). This presents a significant operational risk (Environment Agent: wind=20.0kt, wind_gust=22.0kt, mfc_max_wind_kt=19.4, gust exceeds manufacturer maximum). Additionally, high-severity incidents are present (Reputation Agent: unresolved_high_severity_incident), but the manufacturer constraint alone is a blocking factor. Claims Agent was not called per rule 4."
+    "explanation": "Denied: The Environment Agent shows current wind (22.0 kt) and gust (24.0 kt) both exceed the manufacturer max wind (19.4 kt). No further evaluation performed as this is a hard constraint. Reputation Agent also identified high risk and unresolved high-severity and medium-severity incidents, but wind limitation alone results in denial per policy."
   },
   "visibility": {
     "entry_request": {
@@ -24,7 +24,7 @@ Full output (decision + visibility):
       "pilot_id": "PILOT-12345",
       "organization_id": "ORG-ABC",
       "drone_id": "DRONE-XYZ-001",
-      "payload": "2.0",
+      "payload": "16.0",
       "requested_entry_time": "2026-02-02T10:00:00Z",
       "request_type": "ZONE"
     },
@@ -37,8 +37,8 @@ Full output (decision + visibility):
         "mfc_max_wind_kt": 19.4
       },
       "raw_conditions": {
-        "wind": 20.0,
-        "wind_gust": 22.0,
+        "wind": 22.0,
+        "wind_gust": 24.0,
         "precipitation": "moderate",
         "visibility": 2.0,
         "light_conditions": "daylight",
@@ -52,36 +52,34 @@ Full output (decision + visibility):
         "risk_level": "HIGH",
         "blocking_factors": [
           "high_wind_greater_than_mfc_max",
+          "high_payload_greater_than_mfc_max",
           "low_visibility"
         ],
-        "marginal_factors": [
-          "elevated_wind_gusts",
-          "reduced_visibility"
-        ]
+        "marginal_factors": []
       },
       "constraint_suggestions_wind": [
-        "SPEED_LIMIT(10kt)"
+        "SPEED_LIMIT(10m/s)"
       ],
-      "constraint_suggestions_payload": [],
+      "constraint_suggestions_payload": [
+        "PAYLOAD_LIMIT(15.9kg)"
+      ],
       "recommendation_wind": "HIGH",
-      "recommendation_payload": "LOW",
-      "recommendation_prose_wind": "Wind gusts exceed manufacturer limits and present a significant operational risk.",
-      "recommendation_prose_payload": "",
-      "why_prose_wind": "Observed wind gust (22.0 kt) is above MFC max wind (19.4 kt).",
-      "why_prose_payload": "",
+      "recommendation_payload": "HIGH",
+      "recommendation_prose_wind": "Wind gusts exceed manufacturer maximum wind limit. Operations are not recommended under current wind conditions.",
+      "recommendation_prose_payload": "Payload exceeds manufacturer maximum payload limit. Operations are not recommended under current payload conditions.",
+      "why_prose_wind": "Wind gust 24.0 kt is above manufacturer max wind limit of 19.4 kt. High wind risk based on manufacturer constraints and current weather.",
+      "why_prose_payload": "Payload 16.0 kg is above manufacturer max payload of 15.9 kg. High payload risk due to overweight configuration.",
       "why_wind": [
-        "wind=20.0kt",
-        "wind_gust=22.0kt",
+        "wind_gust_kt=24.0",
         "mfc_max_wind_kt=19.4",
-        "gust exceeds manufacturer maximum",
-        "risk_level=HIGH",
-        "visibility=2.0nm (blocking)"
+        "high_wind_greater_than_mfc_max",
+        "risk_level=HIGH"
       ],
       "why_payload": [
-        "payload_kg=2.0",
+        "payload_kg=16.0",
         "mfc_payload_max_kg=15.9",
-        "payload within manufacturer limits",
-        "risk_level=LOW"
+        "high_payload_greater_than_mfc_max",
+        "risk_level=HIGH"
       ]
     },
     "reputation_agent": {
@@ -171,7 +169,7 @@ Full output (decision + visibility):
       "why": []
     },
     "rule_trace": [
-      "STATE_3_RULE_MFC_WIND_EXCEEDS_MAX"
+      "STATE_3_RULE_WIND_EXCEEDS_MFC_MAX"
     ]
   }
 }
