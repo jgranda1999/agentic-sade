@@ -17,7 +17,7 @@ from models import (
     ClaimsAgentOutput,
     OrchestratorOutput,
 )
-from tools.environment_tools import retrieveEnvironment
+from tools.environment_tools import retrieveEnvironment, retrieveMFC
 from tools.reputation_tools import retrieve_reputations
 from tools.action_required_tools import request_attestation
 from tools.claims_tools import retrieve_claims
@@ -45,8 +45,12 @@ environment_agent = Agent(
     name="environment_agent",
     instructions=ENVIRONMENT_AGENT_PROMPT,
     output_type=EnvironmentAgentOutput,
-    tools=[retrieveEnvironment],
-    handoff_description="Retrieves external environmental conditions (weather, light, airspace) for a Drone|Pilot|Organization entry request and makes a recommendation based on the environmental conditions",
+    tools=[retrieveEnvironment, retrieveMFC],
+    handoff_description=(
+        "Retrieves external environmental conditions (weather, light, airspace) "
+        "and Manufacturer Flight Constraints (MFC) for a Drone|Pilot|Organization "
+        "entry request, then summarizes them into EnvironmentAgentOutput."
+    ),
 )
 
 reputation_agent = Agent(
@@ -81,15 +85,15 @@ orchestrator_agent = Agent(
     instructions=ORCHESTRATOR_PROMPT,
     tools=[
         environment_agent.as_tool(
-            tool_name="retrieveEnvironment",
+            tool_name="environment_agent",
             tool_description=(
-                "Retrieve environmental conditions for a Drone|Pilot|Organization entry request. "
-                "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, request. "
-                "Returns: EnvironmentAgentOutput (validated Pydantic model) with raw_conditions, risk_assessment, constraint_suggestions."
+                "Call the environment agent to get environmental conditions and MFC for a Drone|Pilot|Organization entry request. "
+                "Input: JSON string with keys: pilot_id, org_id, drone_id, payload, entry_time, request (flight request: type, polygon, ceiling, floor, waypoints)."
+                "Returns: EnvironmentAgentOutput (manufacturer_fc with manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt; raw_conditions; risk_assessment; constraint_suggestions_wind; constraint_suggestions_payload; recommendation_wind; recommendation_payload; recommendation_prose_wind; recommendation_prose_payload; why_prose_wind; why_prose_payload; why_wind; why_payload)."
             ),
         ),
         reputation_agent.as_tool(
-            tool_name="retrieve_reputations",
+            tool_name="reputation_agent",
             tool_description=(
                 "Retrieve historical trust signals for a Drone|Pilot|Organization trio. "
                 "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, request. "
@@ -131,6 +135,7 @@ def format_entry_request(request: Dict[str, Any]) -> str:
         f"Pilot ID: {request.get('pilot_id', 'MISSING')}",
         f"Organization ID: {request.get('organization_id', 'MISSING')}",
         f"Drone ID: {request.get('drone_id', 'MISSING')}",
+        f"Payload (kg): {request.get('payload', 'MISSING')}",
         f"Requested Entry Time: {request.get('requested_entry_time', 'MISSING')}",
         f"Request Type: {request.get('request_type', 'MISSING')}",
     ]

@@ -3,7 +3,7 @@ FINAL DECISION
 ======================================================================
 Type: APPROVED
 SADE Message: APPROVED
-Explanation: Approved: Wind is well within demonstrated envelope. No high-severity incidents are unresolved and all required mitigations have been satisfied based on verification by the Claims Agent. Risk is low per the Environment Agent and all reputation requirements are met following incident resolution.
+Explanation: Approved: Wind is within all manufacturer and demonstrated envelopes per Environment Agent (MFC max wind 19.4 kt, observed wind 5.2 kt/gust 8.0 kt). No high-severity incidents remain unresolved, as verified by Claims Agent. Reputation Agent incidents have all required follow-ups satisfied and claims validated.
 ======================================================================
 
 Full output (decision + visibility):
@@ -15,7 +15,7 @@ Full output (decision + visibility):
     "action_id": null,
     "actions": [],
     "denial_code": null,
-    "explanation": "Approved: Wind is well within demonstrated envelope. No high-severity incidents are unresolved and all required mitigations have been satisfied based on verification by the Claims Agent. Risk is low per the Environment Agent and all reputation requirements are met following incident resolution."
+    "explanation": "Approved: Wind is within all manufacturer and demonstrated envelopes per Environment Agent (MFC max wind 19.4 kt, observed wind 5.2 kt/gust 8.0 kt). No high-severity incidents remain unresolved, as verified by Claims Agent. Reputation Agent incidents have all required follow-ups satisfied and claims validated."
   },
   "visibility": {
     "entry_request": {
@@ -23,10 +23,18 @@ Full output (decision + visibility):
       "pilot_id": "PILOT-12345",
       "organization_id": "ORG-ABC",
       "drone_id": "DRONE-XYZ-001",
+      "payload": "2.0",
       "requested_entry_time": "2026-02-02T10:00:00Z",
       "request_type": "ZONE"
     },
     "environment_agent": {
+      "manufacturer_fc": {
+        "manufacturer": "Freefly Systems",
+        "model": "ALTA X",
+        "category": "heavy-lift",
+        "mfc_payload_max_kg": 15.9,
+        "mfc_max_wind_kt": 19.4
+      },
       "raw_conditions": {
         "wind": 5.2,
         "wind_gust": 8.0,
@@ -40,17 +48,29 @@ Full output (decision + visibility):
         }
       },
       "risk_assessment": {
-        "risk_level": "LOW",
+        "risk_level": "MEDIUM",
         "blocking_factors": [],
-        "marginal_factors": []
+        "marginal_factors": [
+          "elevated_wind_gusts"
+        ]
       },
-      "constraint_suggestions": [],
-      "recommendation_prose": "Wind risk signal: LOW. Steady wind 5.2 kt, gusts 8.0 kt.",
-      "recommendation": "LOW",
-      "why_prose": "wind_steady_kt=5.2; wind_gust_kt=8.0; risk_level=LOW",
-      "why": [
-        "wind_steady_kt=5.2",
-        "wind_gust_kt=8.0",
+      "constraint_suggestions_wind": [
+        "SPEED_LIMIT(7m/s)"
+      ],
+      "constraint_suggestions_payload": [],
+      "recommendation_wind": "MEDIUM",
+      "recommendation_payload": "LOW",
+      "recommendation_prose_wind": "Elevated gusts (8.0 kt) are present; take additional precautions.",
+      "recommendation_prose_payload": "",
+      "why_prose_wind": "Wind gusts of 8.0 kt exceed the medium-risk threshold (7 kt), but remain below the MFC max (19.4 kt).",
+      "why_prose_payload": "Payload of 2.0 kg is well below the MFC max payload (15.9 kg), no payload-related risk factors identified.",
+      "why_wind": [
+        "wind_gust_kt=8.0 exceeds medium threshold (7 kt)",
+        "wind_gust_kt=8.0 < mfc_max_wind_kt=19.4",
+        "risk_level=MEDIUM"
+      ],
+      "why_payload": [
+        "payload_kg=2.0 < mfc_payload_max_kg=15.9",
         "risk_level=LOW"
       ]
     },
@@ -134,16 +154,16 @@ Full output (decision + visibility):
       "satisfied": true,
       "resolved_incident_prefixes": [
         "0101",
-        "0100",
-        "0011"
+        "0011",
+        "0100"
       ],
       "unresolved_incident_prefixes": [],
       "satisfied_actions": [
         "RESOLVE_HIGH_SEVERITY_INCIDENTS"
       ],
       "unsatisfied_actions": [],
-      "recommendation_prose": "All required actions for high-severity incidents have been satisfied. Follow-up and resolution has been verified for the high-severity incident prefix 0011, as well as related prefixes 0101 and 0100. No outstanding mitigation actions remain for these incidents.",
-      "why_prose": "Verified follow-up for high-severity prefix(es) ['0011'], based on available SADE verification records.",
+      "recommendation_prose": "The operator has provided verified follow-up reports for all high-severity incidents (prefix '0011'). No further actions are required for this case.",
+      "why_prose": "Follow-up reports for the required high-severity incident prefix '0011' have been verified based on the available SADE data.",
       "why": [
         "verified follow-up for high-severity prefix(es) ['0011'] (from sade-mock-data)"
       ]

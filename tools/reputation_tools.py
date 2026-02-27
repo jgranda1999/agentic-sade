@@ -134,7 +134,6 @@ def _retrieve_reputations_impl(
     pilot_id: str,
     org_id: str,
     drone_id: str,
-    payload: str,
     entry_time: str | None = None,
 ) -> ReputationAgentOutput:
     """
@@ -314,6 +313,5 @@ def retrieve_reputations(input_json: str) -> ReputationAgentOutput:
         pilot_id=data["pilot_id"],
         org_id=data["org_id"],
         drone_id=data["drone_id"],
-        payload=data["payload"],
         entry_time=data.get("entry_time"),
     )

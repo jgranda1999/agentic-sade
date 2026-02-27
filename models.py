@@ -12,6 +12,13 @@ from pydantic import BaseModel, Field
 # ============================================================================
 # Environment Agent Models
 # ============================================================================
+class ManufacturerFC(BaseModel):
+    """Manufacturer flight constraints."""
+    manufacturer: str
+    model: str
+    category: str
+    mfc_payload_max_kg: float
+    mfc_max_wind_kt: float
 
 class SpatialConstraints(BaseModel):
     """Spatial constraints from environment data."""
@@ -39,13 +46,19 @@ class RiskAssessment(BaseModel):
 
 class EnvironmentAgentOutput(BaseModel):
     """Output from Environment Agent (v2: includes recommendation, why for orchestrator)."""
+    manufacturer_fc: ManufacturerFC
     raw_conditions: RawConditions
     risk_assessment: RiskAssessment
-    constraint_suggestions: List[str] = Field(default_factory=list)
-    recommendation_prose: str = ""
-    recommendation: Literal["LOW", "MEDIUM", "HIGH", "UNKNOWN"] = "UNKNOWN"
-    why_prose: str = ""
-    why: List[str] = Field(default_factory=list)
+    constraint_suggestions_wind: List[str] = Field(default_factory=list)
+    constraint_suggestions_payload: List[str] = Field(default_factory=list)
+    recommendation_wind: Literal["LOW", "MEDIUM", "HIGH", "UNKNOWN"] = "UNKNOWN"
+    recommendation_payload: Literal["LOW", "MEDIUM", "HIGH", "UNKNOWN"] = "UNKNOWN"
+    recommendation_prose_wind: str = ""
+    recommendation_prose_payload: str = ""
+    why_prose_wind: str = ""
+    why_prose_payload: str = ""
+    why_wind: List[str] = Field(default_factory=list)
+    why_payload: List[str] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -218,6 +231,7 @@ class EntryRequestVisibility(BaseModel):
     pilot_id: str
     organization_id: str
     drone_id: str
+    payload: str
     requested_entry_time: str
     request_type: str
 
