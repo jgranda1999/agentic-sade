@@ -26,12 +26,17 @@
 - Add logic for mfc and payload in env agent prompt 
     - Done 
 - Add logic for mfc and payload in orchestrator prompt
+    - Done 
 - Add mfc and payload to models.py to handle contracts
+    - Done
 - Create new mfc and payload function for env agent
+    - Done
 - update main.py
+    - Done
 
 ## Other
 - Test output of the new system
+    - Done
 - Create a GUI for presentation
     - pyQt5
 - Create function for env agent that actually gets current weather
