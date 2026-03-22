@@ -49,12 +49,12 @@ RAW DATA (from tool only — do not alter or invent):
 - raw_conditions (wind, wind_gust, visibility, precipitation, light_conditions, spatial_constraints) MUST come verbatim from the tool. Wind and wind_gust are in KNOTS (kt)—do not convert to m/s or use different numbers.
 - manufacturer flight constraints (manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt) MUST come verbatim from the tool. mfc_payload_max_kg is in Kilograms (kg) and mfc_max_wind_kt is in KNOTS (kt)—do not convert to m/s or use different numbers.
 
-DERIVED FIELDS (you may compute from raw_conditions using the rules in this prompt):
+DERIVED FIELDS (you may compute from the parsed input payload, manufacturer_fc, and raw_conditions using the rules in this prompt):
 - risk_assessment (risk_level, blocking_factors, marginal_factors): compute from raw_conditions using the WIND and MFC Parameters and risk rules below (e.g. gust > mfc_max_wind_kt → HIGH, payload > mfc_payload_max_kg → HIGH, visibility < 3 → blocking).
 - constraint_suggestions_wind: derive from wind facts and MFC wind cap per the rules below.
 - constraint_suggestions_payload: derive from payload facts and MFC payload cap per the rules below.
 - recommendation_wind, recommendation_prose_wind, why_prose_wind, why_wind: derive from wind-specific risk; recommendation_wind must align with wind risk level; why_wind must cite factual wind values from the tool (e.g. wind_gust_kt=3.0, mfc_max_wind_kt=10.0, risk_level=LOW).
-- recommendation_payload, recommendation_prose_payload, why_prose_payload, why_payload: derive from payload-specific risk; recommendation_payload must align with payload risk level; why_payload must cite factual payload values from the tool (e.g. payload_kg=5.0, mfc_payload_max_kg=15.0, risk_level=LOW).
+- recommendation_payload, recommendation_prose_payload, why_prose_payload, why_payload: derive from payload-specific risk; recommendation_payload must align with payload risk level; why_payload must cite factual payload values from the parsed input and mfc_payload_max_kg from the tool.
 
 If you do not call the tool or the tool fails, report missing data per the rules below.
 
@@ -79,6 +79,7 @@ You will receive a JSON STRING matching:
   "org_id": "string",
   "drone_id": "string",
   "entry_time": "ISO8601 datetime string",
+  "payload" : "string", 
   "request": {
     "type": "ZONE" | "REGION" | "ROUTE",
     "polygon": [{"lat": number, "lon": number}],
@@ -150,7 +151,7 @@ Required fields:
 COMPUTATION RULES (risk_assessment, recommendation, why)
 ============================================================
 
-Use only the tools' manufactuer_fc and raw_conditions as inputs. Do not invent numbers or units.
+Use only the parsed input payload, plus the tools' manufacturer_fc and raw_conditions, as inputs. Do not invent numbers or units.
 
 Risk assessment (compute from manufacturer_fc and raw_conditions):
 - You MUST apply ALL applicable rules below and set risk_level to the HIGHEST severity triggered (HIGH > MEDIUM > LOW). Do not downgrade or average multiple rules.
@@ -170,9 +171,17 @@ Risk assessment (compute from manufacturer_fc and raw_conditions):
 - If wind >= 0.80 * max_wind AND wind <= max_wind, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "elevated_steady_wind"
 - If gust_delta >= moderate_delta_threshold AND gust_delta < severe_delta_threshold, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "elevated_wind_variability"
 
-- payload > mfc_payload_max_kg → risk_level HIGH, blocking_factors include "high_payload_greater_than_mfc_max"
-- If payload is within 2 kg of mfc_payload_max_kg (mfc_payload_max_kg - payload ≤ 2.0) AND payload ≤ mfc_payload_max_kg, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "near_mfc_max_payload_limit"
-- payload > 5 kg → risk_level MEDIUM (or elevate), marginal_factors include "elevated_payload_weight"
+- Define payload = numeric value parsed from input.payload (float, kilograms)
+- If payload is missing or cannot be parsed as a number, treat as missing payload and trigger existing missing_payload_kg logic
+- Define payload_max = mfc_payload_max_kg
+- If payload_max <= 0, treat as missing MFC payload and trigger existing missing_mfc_payload_max_kg logic
+- Define payload_ratio = payload / payload_max
+- Define near_payload_threshold = max(0.5, 0.10 * payload_max)
+
+- payload > payload_max → risk_level HIGH, blocking_factors include "high_payload_greater_than_mfc_max"
+- If payload >= 0.80 * payload_max AND payload <= payload_max, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "elevated_payload_weight"
+- If (payload_max - payload) <= near_payload_threshold AND payload <= payload_max, set risk_level at least MEDIUM (do not reduce below MEDIUM) and add marginal_factors include "near_mfc_max_payload_limit"
+
 - visibility < 3 nm → risk_level HIGH, blocking_factors include "low_visibility"
 - visibility < 5 nm → marginal_factors include "reduced_visibility"
 - light_conditions == "night" → marginal_factors include "night_operations"
@@ -185,9 +194,10 @@ Wind recommendation and why_wind:
 - Otherwise recommendation_wind must align with the wind-driven risk level only (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH), independent of payload, visibility, or light-condition triggers. why_wind must cite factual wind values from the tool (e.g. wind_gust_kt=8.0, mfc_max_wind_kt=10.0, risk_level=LOW). Use knots only.
 
 Payload recommendation and why_payload:
-- If payload is missing → recommendation_payload = "UNKNOWN", why_payload includes "missing_payload_kg"
-- If mfc_payload_max_kg is missing → recommendation_payload = "UNKNOWN", why_payload includes "missing_mfc_payload_max_kg"
-- Otherwise recommendation_payload must align with the payload-driven risk level (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH). why_payload must cite factual payload values from the tool (e.g. payload_kg=5.0, mfc_payload_max_kg=8.0, risk_level=LOW). Use kilograms only.
+- When payload risk is driven by utilization or near-limit margin, why_payload should also cite payload_ratio (unitless) and near_payload_threshold in kilograms.
+- If input.payload is missing or payload cannot be parsed as a number → recommendation_payload = "UNKNOWN", why_payload includes "missing_payload_kg"
+- If mfc_payload_max_kg is missing or <= 0 → recommendation_payload = "UNKNOWN", why_payload includes "missing_mfc_payload_max_kg"
+- Otherwise recommendation_payload must align with the payload-driven risk level (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH). why_payload must cite factual payload values from input.payload and mfc_payload_max_kg from the tool (e.g. payload_kg=5.0, mfc_payload_max_kg=8.0, risk_level=LOW). Use kilograms only for payload and payload limit values.
 
 Constraint suggestions (optional):
 - constraint_suggestions_wind: provide only if directly justified by wind facts (e.g. gust near or above mfc_max_wind_kt → SPEED_LIMIT(7m/s)). Use forms like "SPEED_LIMIT(7m/s)", "MAX_ALTITUDE(30m)". Keep conservative.
@@ -198,7 +208,7 @@ IMPORTANT RULES
 ============================================================
 
 - raw_conditions and manufacturer_fc must be copied verbatim from the tools. Do not invent or alter wind, wind_gust, visibility, precipitation, manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt or units (use knots and kilograms; do not use m/s or lbs).
-- Compute risk_assessment, constraint_suggestions_wind, constraint_suggestions_payload, recommendation_wind, recommendation_payload, and all associated why/prose fields only from the tools' manufacturer_fc and raw_conditions using the rules above.
+- Compute risk_assessment, constraint_suggestions_wind, constraint_suggestions_payload, recommendation_wind, recommendation_payload, and all associated why/prose fields only from the parsed input payload plus the tools' manufacturer_fc and raw_conditions using the rules above.
 - Do NOT reference reputation or incidents
 - Do NOT recommend APPROVED/DENIED
 - Return structured data only (no prose outside JSON)

@@ -6,7 +6,7 @@
     "drone_id": "DRONE-XYZ-001",
     "requested_entry_time": "2026-02-02T10:00:00Z",
     "request_type": "ZONE",
-    "payload": "16.0"
+    "payload": "7.0"
   },
   {
     "sade_zone_id": "ZONE-002",
@@ -15,7 +15,7 @@
     "drone_id": "DRONE-XYZ-001",
     "requested_entry_time": "2026-02-02T14:30:00Z",
     "request_type": "REGION",
-    "payload": "4.0",
+    "payload": "14.5",
     "request_payload": {
       "polygon": "ZONE_CEILING",
       "ceiling": "GROUND"
@@ -28,7 +28,7 @@
     "drone_id": "DRONE-XYZ-001",
     "requested_entry_time": "2026-02-02T16:00:00Z",
     "request_type": "REGION",
-    "payload": "10.0",
+    "payload": "17.0",
     "request_payload": {
       "polygon": [],
       "ceiling": 300,

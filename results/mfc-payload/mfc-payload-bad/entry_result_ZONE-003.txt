@@ -2,31 +2,31 @@
 FINAL DECISION
 ======================================================================
 Type: DENIED
-SADE Message: DENIED,WIND_EXCEEDS_MFC_MAX,Wind now or gust exceeds manufacturer max wind; raw wind=22.0 kt, gust=24.0 kt, MFC max=19.4 kt.
-Denial Code: WIND_EXCEEDS_MFC_MAX
-Explanation: Denied: The Environment Agent shows current wind (22.0 kt) and gust (24.0 kt) both exceed the manufacturer max wind (19.4 kt). No further evaluation performed as this is a hard constraint. Reputation Agent also identified high risk and unresolved high-severity and medium-severity incidents, but wind limitation alone results in denial per policy.
+SADE Message: DENIED,MFC_DATA_UNAVAILABLE,Manufacturer wind and/or payload maximum data is missing or invalid.
+Denial Code: PAYLOAD_EXCEEDS_MFC_MAX
+Explanation: Denied: The declared payload (17.0 kg) exceeds the manufacturer maximum payload (15.9 kg) for the Freefly ALTA X. Based on the Environment Agent, both wind and payload are above manufacturer limits. The Reputation Agent also indicates unresolved high severity incidents, but DENIED is issued strictly due to payload exceeding MFC maximum (rule 3). Claims Agent was not called, per deterministic rule ordering.
 ======================================================================
 
 Full output (decision + visibility):
 {
   "decision": {
     "type": "DENIED",
-    "sade_message": "DENIED,WIND_EXCEEDS_MFC_MAX,Wind now or gust exceeds manufacturer max wind; raw wind=22.0 kt, gust=24.0 kt, MFC max=19.4 kt.",
+    "sade_message": "DENIED,MFC_DATA_UNAVAILABLE,Manufacturer wind and/or payload maximum data is missing or invalid.",
     "constraints": [],
     "action_id": null,
     "actions": [],
-    "denial_code": "WIND_EXCEEDS_MFC_MAX",
-    "explanation": "Denied: The Environment Agent shows current wind (22.0 kt) and gust (24.0 kt) both exceed the manufacturer max wind (19.4 kt). No further evaluation performed as this is a hard constraint. Reputation Agent also identified high risk and unresolved high-severity and medium-severity incidents, but wind limitation alone results in denial per policy."
+    "denial_code": "PAYLOAD_EXCEEDS_MFC_MAX",
+    "explanation": "Denied: The declared payload (17.0 kg) exceeds the manufacturer maximum payload (15.9 kg) for the Freefly ALTA X. Based on the Environment Agent, both wind and payload are above manufacturer limits. The Reputation Agent also indicates unresolved high severity incidents, but DENIED is issued strictly due to payload exceeding MFC maximum (rule 3). Claims Agent was not called, per deterministic rule ordering."
   },
   "visibility": {
     "entry_request": {
-      "sade_zone_id": "ZONE-001",
+      "sade_zone_id": "ZONE-003",
       "pilot_id": "PILOT-12345",
-      "organization_id": "ORG-ABC",
+      "organization_id": "ORG-GHI",
       "drone_id": "DRONE-XYZ-001",
-      "payload": "16.0",
-      "requested_entry_time": "2026-02-02T10:00:00Z",
-      "request_type": "ZONE"
+      "payload": "17.0",
+      "requested_entry_time": "2026-02-02T16:00:00Z",
+      "request_type": "REGION"
     },
     "environment_agent": {
       "manufacturer_fc": {
@@ -37,8 +37,8 @@ Full output (decision + visibility):
         "mfc_max_wind_kt": 19.4
       },
       "raw_conditions": {
-        "wind": 22.0,
-        "wind_gust": 24.0,
+        "wind": 21.0,
+        "wind_gust": 23.5,
         "precipitation": "moderate",
         "visibility": 2.0,
         "light_conditions": "daylight",
@@ -52,34 +52,40 @@ Full output (decision + visibility):
         "risk_level": "HIGH",
         "blocking_factors": [
           "high_wind_greater_than_mfc_max",
+          "high_steady_wind_greater_than_mfc_max",
+          "severe_wind_variability",
           "high_payload_greater_than_mfc_max",
           "low_visibility"
         ],
         "marginal_factors": []
       },
       "constraint_suggestions_wind": [
-        "SPEED_LIMIT(10m/s)"
+        "MAX_ALTITUDE(30m)"
       ],
-      "constraint_suggestions_payload": [
-        "PAYLOAD_LIMIT(15.9kg)"
-      ],
+      "constraint_suggestions_payload": [],
       "recommendation_wind": "HIGH",
       "recommendation_payload": "HIGH",
-      "recommendation_prose_wind": "Wind gusts exceed manufacturer maximum wind limit. Operations are not recommended under current wind conditions.",
-      "recommendation_prose_payload": "Payload exceeds manufacturer maximum payload limit. Operations are not recommended under current payload conditions.",
-      "why_prose_wind": "Wind gust 24.0 kt is above manufacturer max wind limit of 19.4 kt. High wind risk based on manufacturer constraints and current weather.",
-      "why_prose_payload": "Payload 16.0 kg is above manufacturer max payload of 15.9 kg. High payload risk due to overweight configuration.",
+      "recommendation_prose_wind": "High wind risk signal: measured steady wind and gusts exceed the manufacturer maximum wind operations limit, with severe variability.",
+      "recommendation_prose_payload": "High payload risk signal: declared payload exceeds the manufacturer maximum payload limit.",
+      "why_prose_wind": "Wind=21.0 kt and gust=23.5 kt exceed mfc_max_wind_kt=19.4 kt. Gust variability is severe (gust_delta=2.5 kt vs severe_delta_threshold=6.0 kt).",
+      "why_prose_payload": "Payload_kg=17.0 exceeds mfc_payload_max_kg=15.9.",
       "why_wind": [
-        "wind_gust_kt=24.0",
+        "wind_kt=21.0",
+        "wind_gust_kt=23.5",
         "mfc_max_wind_kt=19.4",
-        "high_wind_greater_than_mfc_max",
-        "risk_level=HIGH"
+        "wind_exceeds_mfc_max_wind_kt",
+        "wind_gust_exceeds_mfc_max_wind_kt",
+        "gust_delta_kt=2.5",
+        "severe_delta_threshold_kt=6.0",
+        "wind_risk_level=HIGH"
       ],
       "why_payload": [
-        "payload_kg=16.0",
+        "payload_kg=17.0",
         "mfc_payload_max_kg=15.9",
-        "high_payload_greater_than_mfc_max",
-        "risk_level=HIGH"
+        "payload_greater_than_mfc_payload_max",
+        "payload_ratio=1.069",
+        "near_payload_threshold_kg=1.59",
+        "payload_risk_level=HIGH"
       ]
     },
     "reputation_agent": {
@@ -169,7 +175,7 @@ Full output (decision + visibility):
       "why": []
     },
     "rule_trace": [
-      "STATE_3_RULE_WIND_EXCEEDS_MFC_MAX"
+      "STATE_3_RULE_PAYLOAD_EXCEEDS_MFC_MAX"
     ]
   }
 }

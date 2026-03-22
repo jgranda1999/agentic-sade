@@ -62,22 +62,36 @@ def _retrieveEnvironment_impl(
         spatial_constraints=spatial,
     )
 
-    # Test case: medium conditions (elevated wind/visibility)
+    # Test case: medium conditions (triggers MEDIUM RISK for ALTA X; max_wind_kt = 19.4)
+    # Set wind and gust to trigger at least one of the medium wind risk rules from v5_prompts/env_agent_prompt.md:
+    # - wind_gust within 3 kt of max_wind_kt (max_wind_kt - wind_gust <= 3.0) AND wind_gust <= max_wind_kt
+    # - OR wind_gust >= 0.85 * max_wind_kt AND wind_gust <= max_wind_kt
+    # - OR wind >= 0.80 * max_wind_kt AND wind <= max_wind_kt
+    # For ALTA X: max_wind_kt = 19.4
+    #     - 0.85 * 19.4 = 16.49
+    #     - 0.80 * 19.4 = 15.52
+    #     - max_wind_kt - 3.0 = 16.4
+    # We'll use wind = 16.0 (MEDIUM: above 0.80*max) and wind_gust = 17.8 (MEDIUM: within 3kt and >0.85*max), both below max_wind_kt.
     raw_conditions_wind_visibility_medium = RawConditions(
-        wind=14.2,
-        wind_gust=17.0,
+        wind=16.0,          # Steady wind above 0.80*max_wind_kt, below max_wind_kt (triggers "elevated_steady_wind")
+        wind_gust=17.8,     # Gust is < 3 kt from max (triggers "near_mfc_max_wind_limit" and "elevated_wind_gusts")
         precipitation="none",
-        visibility=3.0,
+        visibility=10.0,
         light_conditions=light,
         spatial_constraints=spatial,
     )
 
-    # Test case: bad conditions (high wind, poor visibility)
+    # Test case: bad conditions (HIGH RISK for Freefly Systems ALTA X based on MFC: max_wind_kt=19.4, max_payload_kg=15.9)
+    # Triggers:
+    # - wind_gust > mfc_max_wind_kt => HIGH ("high_wind_greater_than_mfc_max")
+    # - wind > mfc_max_wind_kt => HIGH ("high_steady_wind_greater_than_mfc_max")
+    # - visibility < 3nm => HIGH ("low_visibility")
+    # - gust_delta >= severe_delta_threshold (severe wind variability) => HIGH ("severe_wind_variability")
     raw_conditions_wind_visibility_bad = RawConditions(
-        wind=22.0,
-        wind_gust=24.0,
+        wind=21.0,                       # Steady wind above mfc_max_wind_kt (19.4)
+        wind_gust=23.5,                  # Gust above mfc_max_wind_kt
         precipitation="moderate",
-        visibility=2.0,
+        visibility=2.0,                  # Below threshold 3nm
         light_conditions=light,
         spatial_constraints=spatial,
     )

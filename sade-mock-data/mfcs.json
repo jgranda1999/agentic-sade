@@ -16,7 +16,7 @@
       "model": "Mini 4 Pro",
       "category": "consumer",
       "constraints": {
-        "max_wind_resistance_m_s": 10.7,
+        "max_wind_resistance_kt": 20.8,
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40
       },
@@ -29,7 +29,7 @@
       "model": "Air 3",
       "category": "consumer",
       "constraints": {
-        "max_wind_resistance_m_s": 12.0,
+        "max_wind_resistance_kt": 23.3,
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40
       },
@@ -42,7 +42,7 @@
       "model": "Mavic 3 Enterprise (M3E Series)",
       "category": "enterprise",
       "constraints": {
-        "max_wind_resistance_m_s": 12.0,
+        "max_wind_resistance_kt": 23.3,
         "max_takeoff_altitude_m": 6000,
         "operating_temp_min_c": null,
         "operating_temp_max_c": null
@@ -56,7 +56,7 @@
       "model": "Matrice 350 RTK",
       "category": "enterprise",
       "constraints": {
-        "max_wind_resistance_m_s": 12.0,
+        "max_wind_resistance_kt": 23.3,
         "operating_temp_min_c": -20,
         "operating_temp_max_c": 50,
         "max_flight_altitude_m": 7000
@@ -70,8 +70,8 @@
       "model": "EVO II Pro V3",
       "category": "consumer/prosumer",
       "constraints": {
-        "max_wind_resistance_takeoff_landing_m_s": 10.7,
-        "max_wind_resistance_cruise_m_s": 12.0,
+        "max_wind_resistance_takeoff_landing_kt": 20.8,
+        "max_wind_resistance_cruise_kt": 23.3,
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40,
         "service_ceiling_m": 5000
@@ -85,8 +85,8 @@
       "model": "EVO Max 4T",
       "category": "enterprise",
       "constraints": {
-        "max_wind_resistance_takeoff_landing_m_s": 10.7,
-        "max_wind_resistance_cruise_m_s": 12.0,
+        "max_wind_resistance_takeoff_landing_kt": 20.8,
+        "max_wind_resistance_cruise_kt": 23.3,
         "operating_temp_min_c": -20,
         "operating_temp_max_c": 50
       },
@@ -99,7 +99,7 @@
       "model": "Skydio 2+",
       "category": "consumer/prosumer",
       "constraints": {
-        "max_wind_resistance_mph": 25,
+        "max_wind_resistance_kt": 21.7,
         "operating_temp_min_c": -5,
         "operating_temp_max_c": 40,
         "service_ceiling_ft_density_altitude": 15000
@@ -113,8 +113,8 @@
       "model": "ANAFI Ai",
       "category": "enterprise",
       "constraints": {
-        "max_wind_resistance_in_flight_m_s": 14.0,
-        "max_wind_resistance_takeoff_landing_m_s": 12.0,
+        "max_wind_resistance_in_flight_kt": 27.2,
+        "max_wind_resistance_takeoff_landing_kt": 23.3,
         "operating_temp_min_c": -10,
         "operating_temp_max_c": 40,
         "service_ceiling_m": 5000
