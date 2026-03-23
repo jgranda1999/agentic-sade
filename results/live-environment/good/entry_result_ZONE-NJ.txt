@@ -1,0 +1,243 @@
+======================================================================
+FINAL DECISION
+======================================================================
+Type: APPROVED
+SADE Message: APPROVED
+Explanation: Approved: Wind and gust values (7.0 kt, 13.0 kt) are well within both the demonstrated and MFC wind limits (15.0 kt, 19.4 kt); payload is within MFC max. High severity incidents were present but the required mitigation (RESOLVE_HIGH_SEVERITY_INCIDENTS) is now verified as satisfied per claims_agent, with no unresolved high-severity incident prefixes remaining. All risk controls from the Environment Agent, Reputation Agent, and Claims Agent are satisfied.
+======================================================================
+
+Full output (decision + visibility):
+{
+  "decision": {
+    "type": "APPROVED",
+    "sade_message": "APPROVED",
+    "constraints": [],
+    "action_id": null,
+    "actions": [],
+    "denial_code": null,
+    "explanation": "Approved: Wind and gust values (7.0 kt, 13.0 kt) are well within both the demonstrated and MFC wind limits (15.0 kt, 19.4 kt); payload is within MFC max. High severity incidents were present but the required mitigation (RESOLVE_HIGH_SEVERITY_INCIDENTS) is now verified as satisfied per claims_agent, with no unresolved high-severity incident prefixes remaining. All risk controls from the Environment Agent, Reputation Agent, and Claims Agent are satisfied."
+  },
+  "visibility": {
+    "entry_request": {
+      "sade_zone_id": "ZONE-001",
+      "pilot_id": "PILOT-12345",
+      "organization_id": "ORG-ABC",
+      "drone_id": "DRONE-XYZ-001",
+      "payload": "7.0",
+      "requested_entry_time": "2026-03-22T22:50:00Z",
+      "request_type": "ZONE",
+      "weather_latitude": 40.7922983,
+      "weather_longitude": -74.4763123,
+      "weather_location_formatted_address": "Morristown, NJ 07960, USA",
+      "location_query": "Morristown, NJ"
+    },
+    "environment_agent": {
+      "manufacturer_fc": {
+        "manufacturer": "Freefly Systems",
+        "model": "ALTA X",
+        "category": "heavy-lift",
+        "mfc_payload_max_kg": 15.9,
+        "mfc_max_wind_kt": 19.4
+      },
+      "raw_conditions": {
+        "wind": 7.0,
+        "wind_gust": 13.0,
+        "precipitation": "none",
+        "visibility": 15.712742980561556,
+        "light_conditions": "daylight",
+        "spatial_constraints": {
+          "airspace_class": "Class E",
+          "no_fly_zones": [],
+          "restricted_areas": []
+        },
+        "forecast_by_day": [
+          {
+            "date": "2026-03-22",
+            "sunrise": "2026-03-22T06:57",
+            "sunset": "2026-03-22T19:11",
+            "max_wind_speed_kt": 8.2,
+            "max_wind_gust_kt": 21.8,
+            "min_visibility_nm": 0.1079913606911447
+          },
+          {
+            "date": "2026-03-23",
+            "sunrise": "2026-03-23T06:55",
+            "sunset": "2026-03-23T19:13",
+            "max_wind_speed_kt": 12.5,
+            "max_wind_gust_kt": 26.6,
+            "min_visibility_nm": 1.5658747300215983
+          },
+          {
+            "date": "2026-03-24",
+            "sunrise": "2026-03-24T06:54",
+            "sunset": "2026-03-24T19:14",
+            "max_wind_speed_kt": 8.1,
+            "max_wind_gust_kt": 22.7,
+            "min_visibility_nm": 11.177105831533478
+          },
+          {
+            "date": "2026-03-25",
+            "sunrise": "2026-03-25T06:52",
+            "sunset": "2026-03-25T19:15",
+            "max_wind_speed_kt": 9.2,
+            "max_wind_gust_kt": 24.7,
+            "min_visibility_nm": 13.034557235421167
+          },
+          {
+            "date": "2026-03-26",
+            "sunrise": "2026-03-26T06:50",
+            "sunset": "2026-03-26T19:16",
+            "max_wind_speed_kt": 12.2,
+            "max_wind_gust_kt": 34.4,
+            "min_visibility_nm": 13.034557235421167
+          },
+          {
+            "date": "2026-03-27",
+            "sunrise": "2026-03-27T06:49",
+            "sunset": "2026-03-27T19:17",
+            "max_wind_speed_kt": 14.3,
+            "max_wind_gust_kt": 36.0,
+            "min_visibility_nm": 3.4449244060475164
+          },
+          {
+            "date": "2026-03-28",
+            "sunrise": "2026-03-28T06:47",
+            "sunset": "2026-03-28T19:18",
+            "max_wind_speed_kt": 9.7,
+            "max_wind_gust_kt": 16.9,
+            "min_visibility_nm": 13.034557235421167
+          }
+        ]
+      },
+      "risk_assessment": {
+        "risk_level": "LOW",
+        "blocking_factors": [],
+        "marginal_factors": []
+      },
+      "constraint_suggestions_wind": [],
+      "constraint_suggestions_payload": [],
+      "recommendation_wind": "LOW",
+      "recommendation_payload": "LOW",
+      "recommendation_prose_wind": "Wind conditions are below the manufacturer maximum wind limit.",
+      "recommendation_prose_payload": "Payload is below the manufacturer maximum payload limit.",
+      "why_prose_wind": "Steady wind is 7.0 kt and gusts are 13.0 kt versus an MFC max wind of 19.4 kt; gust variability (6.0 kt) is below the moderate variability threshold (3.0 kt) and well below the severe threshold (6.0 kt).",
+      "why_prose_payload": "Requested payload is 7.0 kg versus an MFC payload max of 15.9 kg (payload ratio 0.44), leaving 8.9 kg margin; this is not near the computed near-limit threshold (max(0.5 kg, 10% of max)=1.59 kg).",
+      "why_wind": [
+        "wind_kt=7.0",
+        "wind_gust_kt=13.0",
+        "mfc_max_wind_kt=19.4",
+        "gust_delta_kt=6.0 (wind_gust-wind)",
+        "moderate_delta_threshold_kt=3.0; severe_delta_threshold_kt=6.0",
+        "wind_risk_level=LOW (gust and steady wind below MFC max)"
+      ],
+      "why_payload": [
+        "payload_kg=7.0 (from input.payload)",
+        "mfc_payload_max_kg=15.9",
+        "payload_ratio=0.44 (payload/mfc_payload_max)",
+        "payload_margin_kg=8.9 (mfc_payload_max-payload)",
+        "near_payload_threshold_kg=1.59 (max(0.5, 0.10*mfc_payload_max))",
+        "payload_risk_level=LOW (payload below MFC max)"
+      ]
+    },
+    "reputation_agent": {
+      "incident_analysis": {
+        "incidents": [
+          {
+            "incident_code": "0101-100",
+            "incident_category": "Airspace Violations",
+            "incident_subcategory": "Night Operations Without Proper Lighting",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "880e8400-e29b-41d4-a716-446655440003",
+            "date": "2025-01-12T18:00:00Z"
+          },
+          {
+            "incident_code": "0011-010",
+            "incident_category": "Mid-Air Collisions / Near-Misses",
+            "incident_subcategory": "Near Mid-Air Collision (NMAC)",
+            "severity": "HIGH",
+            "resolved": false,
+            "session_id": "aa0e8400-e29b-41d4-a716-446655440005",
+            "date": "2025-03-14T11:00:00Z"
+          },
+          {
+            "incident_code": "0100-100",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "Communication Loss (C2 Link)",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "cc0e8400-e29b-41d4-a716-446655440007",
+            "date": "2025-05-07T15:30:00Z"
+          },
+          {
+            "incident_code": "0100-001",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "GPS or Navigation Failure",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "550e8400-e29b-41d4-a716-446655440015",
+            "date": "2026-01-18T14:15:00Z"
+          }
+        ],
+        "unresolved_incidents_present": true,
+        "total_incidents": 4,
+        "recent_incidents_count": 0
+      },
+      "risk_assessment": {
+        "risk_level": "HIGH",
+        "blocking_factors": [
+          "unresolved_high_severity_incident"
+        ],
+        "confidence_factors": [
+          "no_recent_incidents"
+        ]
+      },
+      "drp_sessions_count": 21,
+      "demo_steady_max_kt": 15.0,
+      "demo_gust_max_kt": 15.0,
+      "incident_codes": [
+        "0101-100",
+        "0011-010",
+        "0011-010",
+        "0100-100",
+        "0101-100",
+        "0100-001"
+      ],
+      "n_0100_0101": 4,
+      "recommendation_prose": "Historical risk signal: HIGH. Sessions=21, demo wind envelope steady=15.0 kt gust=15.0 kt; n_0100_0101=4, unresolved_incidents_present=True.",
+      "recommendation": "HIGH",
+      "why_prose": "drp_sessions_count=21; demo_steady_max_kt=15.0; demo_gust_max_kt=15.0; n_0100_0101=4; unresolved_incidents_present=True; incident_prefixes_present=['0101', '0011', '0100']",
+      "why": [
+        "drp_sessions_count=21",
+        "demo_steady_max_kt=15.0",
+        "demo_gust_max_kt=15.0",
+        "n_0100_0101=4",
+        "unresolved_incidents_present=True",
+        "incident_prefixes_present=['0101', '0011', '0100']"
+      ]
+    },
+    "claims_agent": {
+      "called": true,
+      "satisfied": true,
+      "resolved_incident_prefixes": [
+        "0011",
+        "0100",
+        "0101"
+      ],
+      "unresolved_incident_prefixes": [],
+      "satisfied_actions": [
+        "RESOLVE_HIGH_SEVERITY_INCIDENTS"
+      ],
+      "unsatisfied_actions": [],
+      "recommendation_prose": "Verification indicates the required action RESOLVE_HIGH_SEVERITY_INCIDENTS is satisfied, with verified follow-up present for the high-severity 0011 prefix and no unresolved incident prefixes remaining.",
+      "why_prose": "A verified follow-up/mitigation record was found for the high-severity incident prefix 0011 (per the available claims records), and no high-severity prefixes remain unresolved for this action scope.",
+      "why": [
+        "verified follow-up for high-severity prefix(es) ['0011'] (from sade-mock-data)"
+      ]
+    },
+    "rule_trace": [
+      "STATE_3_RULE_HIGH_SEV_INCIDENT",
+      "STATE_5_RULE_CLAIMS_SATISFIED_APPROVED"
+    ]
+  }
+}

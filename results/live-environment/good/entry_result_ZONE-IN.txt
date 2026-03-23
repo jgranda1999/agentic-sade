@@ -1,0 +1,252 @@
+======================================================================
+FINAL DECISION
+======================================================================
+Type: APPROVED-CONSTRAINTS
+SADE Message: APPROVED-CONSTRAINTS,(SPEED_LIMIT(7m/s),MAX_ALTITUDE(30m))
+Constraints: ['SPEED_LIMIT(7m/s)', 'MAX_ALTITUDE(30m)']
+Explanation: Approved with constraints: While follow-up for all high-severity incidents was verified, the actual wind gusts (21.4 kt) approach but do not greatly exceed the MFC wind max (19.4 kt). The observed wind conditions are close to the steady/gust demonstrated and manufacturer envelope, warranting operational constraints for high safety margin. Based on the Environment Agent (wind risk: HIGH; manufacturer wind/gust cap: 19.4 kt; observed gust: 21.4 kt), Reputation Agent (historical demo: steady 15.0 kt, gust 15.0 kt; previous incidents present but verified resolved), and Claims Agent (all mitigation/follow-up for high-severity resolved), approval is granted only with constraints.
+======================================================================
+
+Full output (decision + visibility):
+{
+  "decision": {
+    "type": "APPROVED-CONSTRAINTS",
+    "sade_message": "APPROVED-CONSTRAINTS,(SPEED_LIMIT(7m/s),MAX_ALTITUDE(30m))",
+    "constraints": [
+      "SPEED_LIMIT(7m/s)",
+      "MAX_ALTITUDE(30m)"
+    ],
+    "action_id": null,
+    "actions": [],
+    "denial_code": null,
+    "explanation": "Approved with constraints: While follow-up for all high-severity incidents was verified, the actual wind gusts (21.4 kt) approach but do not greatly exceed the MFC wind max (19.4 kt). The observed wind conditions are close to the steady/gust demonstrated and manufacturer envelope, warranting operational constraints for high safety margin. Based on the Environment Agent (wind risk: HIGH; manufacturer wind/gust cap: 19.4 kt; observed gust: 21.4 kt), Reputation Agent (historical demo: steady 15.0 kt, gust 15.0 kt; previous incidents present but verified resolved), and Claims Agent (all mitigation/follow-up for high-severity resolved), approval is granted only with constraints."
+  },
+  "visibility": {
+    "entry_request": {
+      "sade_zone_id": "ZONE-001",
+      "pilot_id": "PILOT-12345",
+      "organization_id": "ORG-ABC",
+      "drone_id": "DRONE-XYZ-001",
+      "payload": "7.0",
+      "requested_entry_time": "2026-03-22T22:50:00Z",
+      "request_type": "ZONE",
+      "weather_latitude": 41.7001908,
+      "weather_longitude": -86.23793280000001,
+      "weather_location_formatted_address": "Notre Dame, IN 46556, USA",
+      "location_query": "Notre Dame, IN"
+    },
+    "environment_agent": {
+      "manufacturer_fc": {
+        "manufacturer": "Freefly Systems",
+        "model": "ALTA X",
+        "category": "heavy-lift",
+        "mfc_payload_max_kg": 15.9,
+        "mfc_max_wind_kt": 19.4
+      },
+      "raw_conditions": {
+        "wind": 12.1,
+        "wind_gust": 21.4,
+        "precipitation": "none",
+        "visibility": 9.881209503239742,
+        "light_conditions": "daylight",
+        "spatial_constraints": {
+          "airspace_class": "Class E",
+          "no_fly_zones": [],
+          "restricted_areas": []
+        },
+        "forecast_by_day": [
+          {
+            "date": "2026-03-22",
+            "sunrise": "2026-03-22T07:44",
+            "sunset": "2026-03-22T19:59",
+            "max_wind_speed_kt": 12.8,
+            "max_wind_gust_kt": 22.2,
+            "min_visibility_nm": 7.883369330453564
+          },
+          {
+            "date": "2026-03-23",
+            "sunrise": "2026-03-23T07:42",
+            "sunset": "2026-03-23T20:00",
+            "max_wind_speed_kt": 14.2,
+            "max_wind_gust_kt": 25.3,
+            "min_visibility_nm": 7.721382289416846
+          },
+          {
+            "date": "2026-03-24",
+            "sunrise": "2026-03-24T07:40",
+            "sunset": "2026-03-24T20:01",
+            "max_wind_speed_kt": 8.5,
+            "max_wind_gust_kt": 18.1,
+            "min_visibility_nm": 11.285097192224622
+          },
+          {
+            "date": "2026-03-25",
+            "sunrise": "2026-03-25T07:39",
+            "sunset": "2026-03-25T20:02",
+            "max_wind_speed_kt": 15.5,
+            "max_wind_gust_kt": 25.5,
+            "min_visibility_nm": 10.010799136069114
+          },
+          {
+            "date": "2026-03-26",
+            "sunrise": "2026-03-26T07:37",
+            "sunset": "2026-03-26T20:03",
+            "max_wind_speed_kt": 23.1,
+            "max_wind_gust_kt": 37.1,
+            "min_visibility_nm": 6.8034557235421165
+          },
+          {
+            "date": "2026-03-27",
+            "sunrise": "2026-03-27T07:35",
+            "sunset": "2026-03-27T20:04",
+            "max_wind_speed_kt": 16.8,
+            "max_wind_gust_kt": 31.1,
+            "min_visibility_nm": 13.034557235421167
+          },
+          {
+            "date": "2026-03-28",
+            "sunrise": "2026-03-28T07:34",
+            "sunset": "2026-03-28T20:05",
+            "max_wind_speed_kt": 19.4,
+            "max_wind_gust_kt": 22.9,
+            "min_visibility_nm": 13.034557235421167
+          }
+        ]
+      },
+      "risk_assessment": {
+        "risk_level": "HIGH",
+        "blocking_factors": [
+          "high_wind_greater_than_mfc_max",
+          "severe_wind_variability"
+        ],
+        "marginal_factors": []
+      },
+      "constraint_suggestions_wind": [
+        "MAX_ALTITUDE(30m)"
+      ],
+      "constraint_suggestions_payload": [],
+      "recommendation_wind": "HIGH",
+      "recommendation_payload": "LOW",
+      "recommendation_prose_wind": "Wind gusts exceed the manufacturer max wind limit; conditions indicate high wind risk for this aircraft configuration.",
+      "recommendation_prose_payload": "Payload is well below the manufacturer payload maximum; payload-related risk signal is low.",
+      "why_prose_wind": "Observed wind_gust_kt=21.4 exceeds mfc_max_wind_kt=19.4; gust_delta_kt=9.3 meets/exceeds severe variability threshold (severe_delta_threshold_kt=6.0).",
+      "why_prose_payload": "Parsed payload_kg=7.0 vs mfc_payload_max_kg=15.9 (payload_ratio=0.44); remaining margin 8.9 kg exceeds near_payload_threshold_kg=1.59.",
+      "why_wind": [
+        "wind_kt=12.1",
+        "wind_gust_kt=21.4",
+        "mfc_max_wind_kt=19.4",
+        "wind_gust_gt_mfc_max_wind_kt (21.4>19.4)",
+        "gust_delta_kt=9.3",
+        "severe_delta_threshold_kt=6.0",
+        "risk_level_wind=HIGH"
+      ],
+      "why_payload": [
+        "payload_kg=7.0",
+        "mfc_payload_max_kg=15.9",
+        "payload_ratio=0.44",
+        "near_payload_threshold_kg=1.59",
+        "risk_level_payload=LOW"
+      ]
+    },
+    "reputation_agent": {
+      "incident_analysis": {
+        "incidents": [
+          {
+            "incident_code": "0101-100",
+            "incident_category": "Airspace Violations",
+            "incident_subcategory": "Night Operations Without Proper Lighting",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "880e8400-e29b-41d4-a716-446655440003",
+            "date": "2025-01-12T18:00:00Z"
+          },
+          {
+            "incident_code": "0011-010",
+            "incident_category": "Mid-Air Collisions / Near-Misses",
+            "incident_subcategory": "Near Mid-Air Collision (NMAC)",
+            "severity": "HIGH",
+            "resolved": false,
+            "session_id": "aa0e8400-e29b-41d4-a716-446655440005",
+            "date": "2025-03-14T11:00:00Z"
+          },
+          {
+            "incident_code": "0100-100",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "Communication Loss (C2 Link)",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "cc0e8400-e29b-41d4-a716-446655440007",
+            "date": "2025-05-07T15:30:00Z"
+          },
+          {
+            "incident_code": "0100-001",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "GPS or Navigation Failure",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "550e8400-e29b-41d4-a716-446655440015",
+            "date": "2026-01-18T14:15:00Z"
+          }
+        ],
+        "unresolved_incidents_present": true,
+        "total_incidents": 4,
+        "recent_incidents_count": 0
+      },
+      "risk_assessment": {
+        "risk_level": "HIGH",
+        "blocking_factors": [
+          "unresolved_high_severity_incident"
+        ],
+        "confidence_factors": [
+          "no_recent_incidents"
+        ]
+      },
+      "drp_sessions_count": 21,
+      "demo_steady_max_kt": 15.0,
+      "demo_gust_max_kt": 15.0,
+      "incident_codes": [
+        "0101-100",
+        "0011-010",
+        "0011-010",
+        "0100-100",
+        "0101-100",
+        "0100-001"
+      ],
+      "n_0100_0101": 4,
+      "recommendation_prose": "Historical risk signal: HIGH. Sessions=21, demo wind envelope steady=15.0 kt gust=15.0 kt; n_0100_0101=4, unresolved_incidents_present=True.",
+      "recommendation": "HIGH",
+      "why_prose": "drp_sessions_count=21; demo_steady_max_kt=15.0; demo_gust_max_kt=15.0; n_0100_0101=4; unresolved_incidents_present=True; incident_prefixes_present=['0101', '0011', '0100']",
+      "why": [
+        "drp_sessions_count=21",
+        "demo_steady_max_kt=15.0",
+        "demo_gust_max_kt=15.0",
+        "n_0100_0101=4",
+        "unresolved_incidents_present=True",
+        "incident_prefixes_present=['0101', '0011', '0100']"
+      ]
+    },
+    "claims_agent": {
+      "called": true,
+      "satisfied": true,
+      "resolved_incident_prefixes": [
+        "0100",
+        "0101",
+        "0011"
+      ],
+      "unresolved_incident_prefixes": [],
+      "satisfied_actions": [
+        "RESOLVE_HIGH_SEVERITY_INCIDENTS"
+      ],
+      "unsatisfied_actions": [],
+      "recommendation_prose": "Verification found follow-up/mitigation on record for the high-severity incident prefix(es) involved (0011). No required actions remain outstanding for this request.",
+      "why_prose": "The only required action was RESOLVE_HIGH_SEVERITY_INCIDENTS, and verification records show follow-up for the high-severity prefix(es) ['0011'] (from sade-mock-data).",
+      "why": [
+        "verified follow-up for high-severity prefix(es) ['0011'] (from sade-mock-data)"
+      ]
+    },
+    "rule_trace": [
+      "STATE_3_RULE_HIGH_SEV_INCIDENT",
+      "STATE_5_RULE_CLAIMS_SATISFIED_NEAR_ENVELOPE"
+    ]
+  }
+}

@@ -4,3 +4,5 @@ openai-agents>=0.9.0
 openai>=2.9.0,<3
 # Pydantic (used by models.py and the SDK)
 pydantic>=2.12.0,<3
+# HTTP client for Open-Meteo and other external APIs
+httpx>=0.27.0,<1

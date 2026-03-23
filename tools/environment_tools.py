@@ -1,15 +1,14 @@
 """
-Environment Agent Tools - Mock implementations for testing delegation system.
+Environment Agent Tools — manufacturer constraints (mock file) and weather (Open-Meteo).
 
-These tools retrieve raw environmental conditions and manufacturer flight
-constraints (MFC). The Environment Agent calls both and assembles
-EnvironmentAgentOutput (including risk_assessment, recommendation, why).
+retrieveEnvironment uses Open-Meteo for live US conditions unless use_mock_weather is true.
 """
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from agents import function_tool
 from models import (
@@ -18,20 +17,46 @@ from models import (
     ManufacturerFC,
 )
 
+from tools.entry_request_fields import entry_time_iso
+from tools.open_meteo import fetch_forecast_json, raw_conditions_from_forecast_json
 
-def _retrieveEnvironment_impl(
-    pilot_id: str,
-    org_id: str,
-    drone_id: str,
-    payload: str,
-    entry_time: str,
-    request: Dict[str, Any],
-    env_profile: str = "good",
-) -> RawConditions:
+# When the request has no coordinates (e.g. some ZONE payloads), use geographic US centroid.
+DEFAULT_US_WEATHER_LAT = float(os.environ.get("SADE_WEATHER_LAT", "39.8283"))
+DEFAULT_US_WEATHER_LON = float(os.environ.get("SADE_WEATHER_LON", "-98.5795"))
+
+
+def _extract_lat_lon(data: Dict[str, Any]) -> Tuple[float, float]:
+    """Resolve weather location: optional overrides, then waypoints/polygon, else default."""
+    lat = data.get("weather_latitude")
+    lon = data.get("weather_longitude")
+    if lat is not None and lon is not None:
+        return float(lat), float(lon)
+    rp_top = data.get("request_payload")
+    if isinstance(rp_top, dict):
+        la = rp_top.get("latitude", rp_top.get("lat"))
+        lo = rp_top.get("longitude", rp_top.get("lon"))
+        if la is not None and lo is not None:
+            return float(la), float(lo)
+    req = data.get("request") or {}
+    rp = req.get("request_payload") or {}
+    wps = req.get("waypoints") or rp.get("waypoints") or []
+    if isinstance(wps, list) and len(wps) > 0:
+        first = wps[0]
+        la, lo = first.get("lat"), first.get("lon")
+        if la is not None and lo is not None:
+            return float(la), float(lo)
+    poly = req.get("polygon") or rp.get("polygon") or []
+    if isinstance(poly, list) and len(poly) > 0:
+        first = poly[0]
+        la, lo = first.get("lat"), first.get("lon")
+        if la is not None and lo is not None:
+            return float(la), float(lo)
+    return DEFAULT_US_WEATHER_LAT, DEFAULT_US_WEATHER_LON
+
+
+def _retrieve_environment_mock(entry_time: str, env_profile: str) -> RawConditions:
     """
-    Retrieve environmental conditions for a DPO entry request.
-    Mock: returns one of three fixed profiles. In production, query weather/airspace APIs.
-    env_profile: "good" | "medium" | "bad" (optional; default "good"). Use for testing.
+    Deterministic profiles for tests. env_profile: "good" | "medium" | "bad".
     """
     try:
         time_str = entry_time.replace("Z", "+00:00") if entry_time.endswith("Z") else entry_time
@@ -52,7 +77,6 @@ def _retrieveEnvironment_impl(
         restricted_areas=[],
     )
 
-    # Test case: good conditions (typical safe operations)
     raw_conditions_wind_visibility_good = RawConditions(
         wind=5.2,
         wind_gust=8.0,
@@ -62,45 +86,61 @@ def _retrieveEnvironment_impl(
         spatial_constraints=spatial,
     )
 
-    # Test case: medium conditions (triggers MEDIUM RISK for ALTA X; max_wind_kt = 19.4)
-    # Set wind and gust to trigger at least one of the medium wind risk rules from v5_prompts/env_agent_prompt.md:
-    # - wind_gust within 3 kt of max_wind_kt (max_wind_kt - wind_gust <= 3.0) AND wind_gust <= max_wind_kt
-    # - OR wind_gust >= 0.85 * max_wind_kt AND wind_gust <= max_wind_kt
-    # - OR wind >= 0.80 * max_wind_kt AND wind <= max_wind_kt
-    # For ALTA X: max_wind_kt = 19.4
-    #     - 0.85 * 19.4 = 16.49
-    #     - 0.80 * 19.4 = 15.52
-    #     - max_wind_kt - 3.0 = 16.4
-    # We'll use wind = 16.0 (MEDIUM: above 0.80*max) and wind_gust = 17.8 (MEDIUM: within 3kt and >0.85*max), both below max_wind_kt.
     raw_conditions_wind_visibility_medium = RawConditions(
-        wind=16.0,          # Steady wind above 0.80*max_wind_kt, below max_wind_kt (triggers "elevated_steady_wind")
-        wind_gust=17.8,     # Gust is < 3 kt from max (triggers "near_mfc_max_wind_limit" and "elevated_wind_gusts")
+        wind=16.0,
+        wind_gust=17.8,
         precipitation="none",
         visibility=10.0,
         light_conditions=light,
         spatial_constraints=spatial,
     )
 
-    # Test case: bad conditions (HIGH RISK for Freefly Systems ALTA X based on MFC: max_wind_kt=19.4, max_payload_kg=15.9)
-    # Triggers:
-    # - wind_gust > mfc_max_wind_kt => HIGH ("high_wind_greater_than_mfc_max")
-    # - wind > mfc_max_wind_kt => HIGH ("high_steady_wind_greater_than_mfc_max")
-    # - visibility < 3nm => HIGH ("low_visibility")
-    # - gust_delta >= severe_delta_threshold (severe wind variability) => HIGH ("severe_wind_variability")
     raw_conditions_wind_visibility_bad = RawConditions(
-        wind=21.0,                       # Steady wind above mfc_max_wind_kt (19.4)
-        wind_gust=23.5,                  # Gust above mfc_max_wind_kt
+        wind=21.0,
+        wind_gust=23.5,
         precipitation="moderate",
-        visibility=2.0,                  # Below threshold 3nm
+        visibility=2.0,
         light_conditions=light,
         spatial_constraints=spatial,
     )
 
-    # if env_profile == "medium":
-    #     return raw_conditions_wind_visibility_medium
-    # if env_profile == "bad":
-    #     return raw_conditions_wind_visibility_bad
-    return raw_conditions_wind_visibility_bad
+    if env_profile == "medium":
+        return raw_conditions_wind_visibility_medium
+    if env_profile == "bad":
+        return raw_conditions_wind_visibility_bad
+    return raw_conditions_wind_visibility_good
+
+
+def _retrieve_environment_live(full_data: Dict[str, Any]) -> RawConditions:
+    entry_time = entry_time_iso(full_data)
+    lat, lon = _extract_lat_lon(full_data)
+    forecast = fetch_forecast_json(lat, lon)
+    return raw_conditions_from_forecast_json(forecast, entry_time)
+
+
+def _retrieveEnvironment_impl(
+    pilot_id: str,
+    org_id: str,
+    drone_id: str,
+    payload: str,
+    entry_time: str,
+    request: Dict[str, Any],
+    env_profile: str = "good",
+    use_mock_weather: bool = False,
+    full_data: Dict[str, Any] | None = None,
+) -> RawConditions:
+    """
+    Environmental conditions for a DPO entry request.
+
+    Live: Open-Meteo at coordinates from weather_latitude/longitude, waypoints,
+    polygon, or SADE_WEATHER_LAT/LON default.
+
+    Mock: set use_mock_weather true and optional env_profile good|medium|bad.
+    """
+    if use_mock_weather:
+        return _retrieve_environment_mock(entry_time, env_profile)
+    assert full_data is not None
+    return _retrieve_environment_live(full_data)
 
 
 def _retrieveMFC_impl(drone_id: str) -> ManufacturerFC:
@@ -142,23 +182,31 @@ def retrieveEnvironment(input_json: str) -> RawConditions:
     Retrieve raw environmental conditions for a Drone|Pilot|Organization entry request.
 
     Args:
-        input_json: JSON string with pilot_id, org_id, drone_id, payload, entry_time, request.
+        input_json: JSON with pilot_id, org_id, drone_id, payload, and entry_time or
+            requested_entry_time (ISO8601); optional request.
+            Optional: use_mock_weather (bool, default false) for fixed test profiles;
+            env_profile good|medium|bad when mocking; weather_latitude, weather_longitude
+            to override the location for Open-Meteo.
 
     Returns:
-        RawConditions (wind, wind_gust, precipitation, visibility, light_conditions, spatial_constraints).
+        RawConditions including optional forecast_by_day (7-day Open-Meteo aggregates).
     """
     data = json.loads(input_json)
     env_profile = data.get("env_profile", "good")
     if env_profile not in ("good", "medium", "bad"):
         env_profile = "good"
+    use_mock = bool(data.get("use_mock_weather", False))
+    et = entry_time_iso(data)
     return _retrieveEnvironment_impl(
         pilot_id=data["pilot_id"],
         org_id=data["org_id"],
         drone_id=data["drone_id"],
         payload=data["payload"],
-        entry_time=data["entry_time"],
-        request=data["request"],
+        entry_time=et,
+        request=data.get("request") or {},
         env_profile=env_profile,
+        use_mock_weather=use_mock,
+        full_data=data,
     )
 
 

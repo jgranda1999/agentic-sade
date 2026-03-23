@@ -46,7 +46,8 @@ You MUST:
 4) Use the tools output as the only source of raw data; then produce EnvironmentAgentOutput as below.
 
 RAW DATA (from tool only — do not alter or invent):
-- raw_conditions (wind, wind_gust, visibility, precipitation, light_conditions, spatial_constraints) MUST come verbatim from the tool. Wind and wind_gust are in KNOTS (kt)—do not convert to m/s or use different numbers.
+- raw_conditions MUST be copied **verbatim** from the tool, including every field the tool returns. Required scalars: wind, wind_gust, visibility, precipitation, light_conditions, spatial_constraints. Wind and wind_gust are in **KNOTS (kt)**—do not convert to m/s or use different numbers. **visibility** is in **nautical miles (nm)** when present.
+- If the tool returns **`raw_conditions.forecast_by_day`** (7-day Open-Meteo aggregates: per-day sunrise/sunset strings, max wind/gust, min visibility), you MUST copy it verbatim—do not omit, summarize, or rewrite it.
 - manufacturer flight constraints (manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt) MUST come verbatim from the tool. mfc_payload_max_kg is in Kilograms (kg) and mfc_max_wind_kt is in KNOTS (kt)—do not convert to m/s or use different numbers.
 
 DERIVED FIELDS (you may compute from the parsed input payload, manufacturer_fc, and raw_conditions using the rules in this prompt):
@@ -72,20 +73,50 @@ If tool returns missing MFC fields:
 INPUT FORMAT (JSON string)
 ============================================================
 
-You will receive a JSON STRING matching:
+You will receive a JSON STRING. **Pass the same string unchanged** into `retrieveEnvironment` and `retrieveMFC`.
+
+Core fields (typical):
 
 {
   "pilot_id": "string",
   "org_id": "string",
   "drone_id": "string",
   "entry_time": "ISO8601 datetime string",
-  "payload" : "string", 
-  "request": {
-    "type": "ZONE" | "REGION" | "ROUTE",
-    "polygon": [{"lat": number, "lon": number}],
-    "ceiling": number,
-    "floor": number,
-    "waypoints": [{"lat": number, "lon": number, "altitude": number}]
+  "payload": "string",
+  "request": { ... }
+}
+
+You may use **`entry_time`** OR **`requested_entry_time`** (same ISO instant); the tools accept either.
+
+**Weather location (transparency — use when present in the orchestrator handoff):**
+
+- **`weather_latitude`** / **`weather_longitude`** (numbers, WGS84): When the ENTRY REQUEST includes a resolved weather reference point, the orchestrator MUST pass these at the **top level** of this JSON. The environment tools use them for Open-Meteo so weather matches **`visibility.entry_request`** in the final orchestrator output. If absent, tools may use waypoints, `request_payload` coordinates, or a default US centroid—still pass the JSON through unchanged.
+
+**Optional test / override:**
+
+- **`use_mock_weather`**: boolean. If true, tools return fixed test profiles instead of live Open-Meteo (for harnesses). Default is false for production.
+
+**Request shape:** The `request` object may mirror the entry payload. For weather:
+
+- **Place name to geocode (ingress):** put it only in **`request_payload.location_query`** (e.g. `"Notre Dame, IN"`). Do **not** use **`weather_location_formatted_address`** as input—that field is filled **after** geocoding on the entry request.
+- **Explicit coordinates:** `request_payload.latitude` / `longitude` (or `lat` / `lon`).
+- After ingest, your tool JSON will usually include top-level **`weather_latitude` / `weather_longitude`** when the orchestrator passes them through (same as **`visibility.entry_request`**).
+
+Example `request` (illustrative—fields may vary):
+
+{
+  "type": "ZONE" | "REGION" | "ROUTE",
+  "polygon": [{"lat": number, "lon": number}],
+  "ceiling": number,
+  "floor": number,
+  "waypoints": [{"lat": number, "lon": number, "altitude": number}],
+  "request_payload": {
+    "polygon": [],
+    "ceiling": 300,
+    "waypoints": [ ... ],
+    "latitude": null,
+    "longitude": null,
+    "location_query": "Notre Dame, IN"
   }
 }
 
@@ -104,7 +135,7 @@ Tool:
 
 How to use:
 - Pass the input JSON STRING directly into retrieveEnvironment(input_json)
-- The tool returns raw_conditions (wind, wind_gust in knots, visibility, etc.). Copy raw_conditions verbatim.
+- The tool returns **raw_conditions** (wind, wind_gust in knots, visibility in nm when present, precipitation, light_conditions, spatial_constraints, and **forecast_by_day** when using live Open-Meteo). Copy **raw_conditions** in full, verbatim—including **forecast_by_day** when returned.
 
 
 **IMPORTANT**: Once you have the output from these two tools, you may then compute risk_assessment, constraint_suggestions_wind, constraint_suggestions_payload, recommendation_wind, recommendation_payload, and the associated why/prose fields from that data using the rules in this prompt.
@@ -126,12 +157,13 @@ Required fields:
   - wind: float (steady wind, knots) (required)
   - wind_gust: float (knots) (required)
   - precipitation: "none" | "light" | "moderate" | "heavy" (required)
-  - visibility: float | null
+  - visibility: float | null (nautical miles when present)
   - light_conditions: "daylight" | "dusk" | "dawn" | "night" (required)
   - spatial_constraints:
     - airspace_class: string | null
     - no_fly_zones: list[str]
     - restricted_areas: list[str]
+  - forecast_by_day: optional list of objects (when live weather): each item may include date, sunrise, sunset, max_wind_speed_kt, max_wind_gust_kt, min_visibility_nm — copy verbatim from the tool when present
 - risk_assessment:
   - risk_level: "LOW" | "MEDIUM" | "HIGH" (required)
   - blocking_factors: list[str]
@@ -207,7 +239,7 @@ Constraint suggestions (optional):
 IMPORTANT RULES
 ============================================================
 
-- raw_conditions and manufacturer_fc must be copied verbatim from the tools. Do not invent or alter wind, wind_gust, visibility, precipitation, manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt or units (use knots and kilograms; do not use m/s or lbs).
+- raw_conditions and manufacturer_fc must be copied verbatim from the tools. Do not invent or alter wind, wind_gust, visibility, precipitation, forecast_by_day, manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt or units (use knots and kilograms for wind; visibility in nm; do not use m/s or lbs).
 - Compute risk_assessment, constraint_suggestions_wind, constraint_suggestions_payload, recommendation_wind, recommendation_payload, and all associated why/prose fields only from the parsed input payload plus the tools' manufacturer_fc and raw_conditions using the rules above.
 - Do NOT reference reputation or incidents
 - Do NOT recommend APPROVED/DENIED

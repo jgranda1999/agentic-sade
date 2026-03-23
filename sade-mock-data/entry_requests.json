@@ -4,21 +4,25 @@
     "pilot_id": "PILOT-12345",
     "organization_id": "ORG-ABC",
     "drone_id": "DRONE-XYZ-001",
-    "requested_entry_time": "2026-02-02T10:00:00Z",
+    "requested_entry_time": "2026-03-22T22:50:00Z",
     "request_type": "ZONE",
-    "payload": "7.0"
+    "payload": "7.0",
+    "request_payload": {
+      "location_query": "New York, NY"
+    }
   },
   {
     "sade_zone_id": "ZONE-002",
     "pilot_id": "PILOT-12345",
     "organization_id": "ORG-DEF",
     "drone_id": "DRONE-XYZ-001",
-    "requested_entry_time": "2026-02-02T14:30:00Z",
+    "requested_entry_time": "2026-03-22T22:50:00Z",
     "request_type": "REGION",
     "payload": "14.5",
     "request_payload": {
       "polygon": "ZONE_CEILING",
-      "ceiling": "GROUND"
+      "ceiling": "GROUND",
+      "location_query": "Notre Dame, IN"
     }
   },
   {
@@ -26,13 +30,14 @@
     "pilot_id": "PILOT-12345",
     "organization_id": "ORG-GHI",
     "drone_id": "DRONE-XYZ-001",
-    "requested_entry_time": "2026-02-02T16:00:00Z",
+    "requested_entry_time": "2026-03-22T22:50:00Z",
     "request_type": "REGION",
     "payload": "17.0",
     "request_payload": {
       "polygon": [],
       "ceiling": 300,
-      "floor": 250
+      "floor": 250,
+      "location_query": "Notre Dame, IN"
     }
   },
   {
@@ -40,7 +45,7 @@
     "pilot_id": "PILOT-12345",
     "organization_id": "ORG-JKL",
     "drone_id": "DRONE-XYZ-001",
-    "requested_entry_time": "2026-02-02T18:00:00Z",
+    "requested_entry_time": "2026-03-22T22:50:00Z",
     "request_type": "ROUTE",
     "payload": "2.0",
     "request_payload": {
@@ -49,7 +54,8 @@
         {"lat": 37.7849, "lon": -122.4294, "altitude": 120},
         {"lat": 37.7949, "lon": -122.4394, "altitude": 110},
         {"lat": 37.8049, "lon": -122.4494, "altitude": 100}
-      ]
+      ],
+      "location_query": "Notre Dame, IN"
     }
   },
   {
@@ -57,7 +63,7 @@
     "pilot_id": "PILOT-12345",
     "organization_id": "ORG-MNO",
     "drone_id": "DRONE-XYZ-001",
-    "requested_entry_time": "2026-02-03T09:00:00Z",
+    "requested_entry_time": "2026-03-22T22:50:00Z",
     "request_type": "ROUTE",
     "payload": "2.0",
     "request_payload": {
@@ -67,7 +73,8 @@
         {"lat": 40.7328, "lon": -74.0260, "altitude": 200},
         {"lat": 40.7428, "lon": -74.0360, "altitude": 180},
         {"lat": 40.7528, "lon": -74.0460, "altitude": 150}
-      ]
+      ],
+      "location_query": "Notre Dame, IN"
     }
   }
 ]

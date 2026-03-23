@@ -36,6 +36,8 @@ from models import (
     OrchestratorOutput,
 )
 from tools.environment_tools import retrieveEnvironment, retrieveMFC
+from tools.entry_request_fields import normalize_entry_request_dict
+from tools.location_resolution import resolve_entry_request_location
 from tools.reputation_tools import retrieve_reputations
 from tools.action_required_tools import request_attestation
 from tools.claims_tools import retrieve_claims
@@ -163,6 +165,10 @@ def format_entry_request(request: Dict[str, Any]) -> str:
         f"Requested Entry Time: {request.get('requested_entry_time', 'MISSING')}",
         f"Request Type: {request.get('request_type', 'MISSING')}",
     ]
+    et_tools = request.get("entry_time") or request.get("requested_entry_time", "MISSING")
+    lines.append(
+        f"entry_time for sub-agent tool JSON (same instant as requested; key name is entry_time): {et_tools}"
+    )
     
     request_payload = request.get('request_payload', {})
     if request_payload:
@@ -178,7 +184,19 @@ def format_entry_request(request: Dict[str, Any]) -> str:
                 lines.append(f"    {i}. Lat: {wp.get('lat')}, Lon: {wp.get('lon')}, Alt: {wp.get('altitude')} m ASL")
         elif request.get('request_type') == 'ZONE':
             lines.append("  Full zone access requested")
-    
+        lq = request_payload.get("location_query")
+        if isinstance(lq, str) and lq.strip():
+            lines.append(f"  Location query (for weather, resolved before orchestration if needed): {lq.strip()}")
+
+    if request.get("weather_latitude") is not None and request.get("weather_longitude") is not None:
+        lines.append(
+            "\nWeather reference point (for environment_agent JSON: include weather_latitude and "
+            "weather_longitude at top level when calling retrieveEnvironment): "
+            f"{request['weather_latitude']}, {request['weather_longitude']}"
+        )
+        if request.get("weather_location_formatted_address"):
+            lines.append(f"  Resolved address: {request['weather_location_formatted_address']}")
+
     # Include safecert_pin if provided (for ACTION-REQUIRED re-evaluation)
     if 'safecert_pin' in request:
         lines.append(f"\nSafeCert PIN: {request['safecert_pin']}")
@@ -277,6 +295,8 @@ async def process_entry_request(
         Parsed output dict with "decision" and "visibility" (v2 contract).
         Raises ValueError if output could not be parsed as JSON.
     """
+    resolve_entry_request_location(request)
+    normalize_entry_request_dict(request)
     formatted_request = format_entry_request(request)
     correction = (
         "FRAMEWORK CORRECTION (mandatory): Your last JSON was invalid because "
@@ -319,8 +339,8 @@ async def main():
     medium = example_requests[1]
     bad = example_requests[2]
 
-    request = bad
-
+    request = good
+    
     print("=" * 70)
     print("SADE Entry Request Processing")
     print("=" * 70)
@@ -359,8 +379,13 @@ async def main():
         case_5 = "mfc-payload/mfc-payload-medium"
         case_6 = "mfc-payload/mfc-payload-bad"
 
+        #live environment
+        case_7 = "live-environment/good"
+        case_8 = "live-environment/medium"
+        case_9 = "live-environment/bad"
+
         
-        output_filename = f"results/{case_6}/entry_result_{test_number}.txt"
+        output_filename = f"results/{case_7}/entry_result_ZONE-003.txt"
         with open(output_filename, "w") as f:
             f.write("=" * 70 + "\n")
             f.write("FINAL DECISION\n")

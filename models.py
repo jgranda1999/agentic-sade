@@ -27,6 +27,16 @@ class SpatialConstraints(BaseModel):
     restricted_areas: List[str] = Field(default_factory=list)
 
 
+class WeatherDayForecast(BaseModel):
+    """Per-day aggregates from Open-Meteo (local date at the forecast location)."""
+    date: str
+    sunrise: Optional[str] = None
+    sunset: Optional[str] = None
+    max_wind_speed_kt: Optional[float] = None
+    max_wind_gust_kt: Optional[float] = None
+    min_visibility_nm: Optional[float] = None
+
+
 class RawConditions(BaseModel):
     """Raw environmental conditions."""
     wind: float
@@ -35,6 +45,7 @@ class RawConditions(BaseModel):
     visibility: Optional[float] = None
     light_conditions: Literal["daylight", "dusk", "dawn", "night"]
     spatial_constraints: SpatialConstraints
+    forecast_by_day: Optional[List[WeatherDayForecast]] = None
 
 
 class RiskAssessment(BaseModel):
@@ -226,7 +237,14 @@ class ClaimsAgentOutput(BaseModel):
 # claims_agent -> wrapper with called + ClaimsAgentOutput (when called).
 
 class EntryRequestVisibility(BaseModel):
-    """Visibility copy of the entry request (must match input field names)."""
+    """
+    Visibility copy of the entry request (canonical field names match ingress JSON).
+
+    Weather transparency: after pre-orchestrator ingest, ``weather_latitude`` /
+    ``weather_longitude`` (and optionally ``weather_location_formatted_address``,
+    ``location_query``) describe which point was used for Open-Meteo. Omit or null
+    when not supplied (tools may fall back to waypoints or default US centroid).
+    """
     sade_zone_id: str
     pilot_id: str
     organization_id: str
@@ -234,6 +252,22 @@ class EntryRequestVisibility(BaseModel):
     payload: str
     requested_entry_time: str
     request_type: str
+    weather_latitude: Optional[float] = Field(
+        default=None,
+        description="WGS84 latitude for weather retrieval (from ingest or explicit payload).",
+    )
+    weather_longitude: Optional[float] = Field(
+        default=None,
+        description="WGS84 longitude for weather retrieval (from ingest or explicit payload).",
+    )
+    weather_location_formatted_address: Optional[str] = Field(
+        default=None,
+        description="If location_query was geocoded (e.g. Google), the resolved formatted address.",
+    )
+    location_query: Optional[str] = Field(
+        default=None,
+        description="Original place-name query (from request_payload.location_query when set).",
+    )
 
 
 class ClaimsAgentVisibility(BaseModel):

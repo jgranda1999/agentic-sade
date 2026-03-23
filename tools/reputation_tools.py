@@ -309,9 +309,10 @@ def retrieve_reputations(input_json: str) -> ReputationAgentOutput:
         ReputationAgentOutput with reputation summary, incident analysis, and risk assessment
     """
     data = json.loads(input_json)
+    entry_time = data.get("entry_time") or data.get("requested_entry_time")
     return _retrieve_reputations_impl(
         pilot_id=data["pilot_id"],
         org_id=data["org_id"],
         drone_id=data["drone_id"],
-        entry_time=data.get("entry_time"),
+        entry_time=entry_time,
     )

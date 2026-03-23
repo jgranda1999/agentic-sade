@@ -1,0 +1,242 @@
+======================================================================
+FINAL DECISION
+======================================================================
+Type: DENIED
+SADE Message: DENIED,PAYLOAD_EXCEEDS_MFC_MAX,Requested payload exceeds the manufacturer maximum payload.
+Denial Code: PAYLOAD_EXCEEDS_MFC_MAX
+Explanation: Denied: The requested payload (17.0 kg) exceeds the manufacturer maximum payload (15.9 kg) based on Environment Agent output. Wind and incident history are high risk, but denial is solely due to exceeding manufacturer payload specification. Reputation and claims were not evaluated further since payload exclusion is a hard stop per rules.
+======================================================================
+
+Full output (decision + visibility):
+{
+  "decision": {
+    "type": "DENIED",
+    "sade_message": "DENIED,PAYLOAD_EXCEEDS_MFC_MAX,Requested payload exceeds the manufacturer maximum payload.",
+    "constraints": [],
+    "action_id": null,
+    "actions": [],
+    "denial_code": "PAYLOAD_EXCEEDS_MFC_MAX",
+    "explanation": "Denied: The requested payload (17.0 kg) exceeds the manufacturer maximum payload (15.9 kg) based on Environment Agent output. Wind and incident history are high risk, but denial is solely due to exceeding manufacturer payload specification. Reputation and claims were not evaluated further since payload exclusion is a hard stop per rules."
+  },
+  "visibility": {
+    "entry_request": {
+      "sade_zone_id": "ZONE-003",
+      "pilot_id": "PILOT-12345",
+      "organization_id": "ORG-GHI",
+      "drone_id": "DRONE-XYZ-001",
+      "payload": "17.0",
+      "requested_entry_time": "2026-03-22T22:50:00Z",
+      "request_type": "REGION",
+      "weather_latitude": 41.7001908,
+      "weather_longitude": -86.23793280000001,
+      "weather_location_formatted_address": "Notre Dame, IN 46556, USA",
+      "location_query": "Notre Dame, IN"
+    },
+    "environment_agent": {
+      "manufacturer_fc": {
+        "manufacturer": "Freefly Systems",
+        "model": "ALTA X",
+        "category": "heavy-lift",
+        "mfc_payload_max_kg": 15.9,
+        "mfc_max_wind_kt": 19.4
+      },
+      "raw_conditions": {
+        "wind": 11.7,
+        "wind_gust": 21.6,
+        "precipitation": "none",
+        "visibility": 7.991360691144709,
+        "light_conditions": "daylight",
+        "spatial_constraints": {
+          "airspace_class": "Class E",
+          "no_fly_zones": [],
+          "restricted_areas": []
+        },
+        "forecast_by_day": [
+          {
+            "date": "2026-03-22",
+            "sunrise": "2026-03-22T07:44",
+            "sunset": "2026-03-22T19:59",
+            "max_wind_speed_kt": 12.8,
+            "max_wind_gust_kt": 22.2,
+            "min_visibility_nm": 4.427645788336933
+          },
+          {
+            "date": "2026-03-23",
+            "sunrise": "2026-03-23T07:42",
+            "sunset": "2026-03-23T20:00",
+            "max_wind_speed_kt": 14.2,
+            "max_wind_gust_kt": 26.0,
+            "min_visibility_nm": 7.235421166306695
+          },
+          {
+            "date": "2026-03-24",
+            "sunrise": "2026-03-24T07:40",
+            "sunset": "2026-03-24T20:01",
+            "max_wind_speed_kt": 8.5,
+            "max_wind_gust_kt": 18.1,
+            "min_visibility_nm": 11.285097192224622
+          },
+          {
+            "date": "2026-03-25",
+            "sunrise": "2026-03-25T07:39",
+            "sunset": "2026-03-25T20:02",
+            "max_wind_speed_kt": 15.5,
+            "max_wind_gust_kt": 25.5,
+            "min_visibility_nm": 10.010799136069114
+          },
+          {
+            "date": "2026-03-26",
+            "sunrise": "2026-03-26T07:37",
+            "sunset": "2026-03-26T20:03",
+            "max_wind_speed_kt": 23.1,
+            "max_wind_gust_kt": 37.1,
+            "min_visibility_nm": 6.8034557235421165
+          },
+          {
+            "date": "2026-03-27",
+            "sunrise": "2026-03-27T07:35",
+            "sunset": "2026-03-27T20:04",
+            "max_wind_speed_kt": 16.8,
+            "max_wind_gust_kt": 31.1,
+            "min_visibility_nm": 13.034557235421167
+          },
+          {
+            "date": "2026-03-28",
+            "sunrise": "2026-03-28T07:34",
+            "sunset": "2026-03-28T20:05",
+            "max_wind_speed_kt": 19.4,
+            "max_wind_gust_kt": 22.9,
+            "min_visibility_nm": 13.034557235421167
+          }
+        ]
+      },
+      "risk_assessment": {
+        "risk_level": "HIGH",
+        "blocking_factors": [
+          "high_wind_greater_than_mfc_max",
+          "high_payload_greater_than_mfc_max"
+        ],
+        "marginal_factors": []
+      },
+      "constraint_suggestions_wind": [
+        "SPEED_LIMIT(5m/s)",
+        "MAX_ALTITUDE(30m)"
+      ],
+      "constraint_suggestions_payload": [
+        "PAYLOAD_MAX(15.9kg)"
+      ],
+      "recommendation_wind": "HIGH",
+      "recommendation_payload": "HIGH",
+      "recommendation_prose_wind": "Wind gusts exceed the manufacturer maximum wind operating limit.",
+      "recommendation_prose_payload": "Requested payload exceeds the manufacturer maximum payload limit.",
+      "why_prose_wind": "Wind gust=21.6 kt is above MFC max wind=19.4 kt (steady wind=11.7 kt).",
+      "why_prose_payload": "Payload=17.0 kg is above MFC payload max=15.9 kg.",
+      "why_wind": [
+        "wind_kt=11.7",
+        "wind_gust_kt=21.6",
+        "mfc_max_wind_kt=19.4",
+        "wind_gust_gt_mfc_max=true (21.6>19.4)",
+        "wind_risk_level=HIGH"
+      ],
+      "why_payload": [
+        "payload_kg=17.0",
+        "mfc_payload_max_kg=15.9",
+        "payload_gt_mfc_max=true (17.0>15.9)",
+        "payload_ratio=1.069182389937107",
+        "near_payload_threshold_kg=1.59",
+        "payload_risk_level=HIGH"
+      ]
+    },
+    "reputation_agent": {
+      "incident_analysis": {
+        "incidents": [
+          {
+            "incident_code": "0101-100",
+            "incident_category": "Airspace Violations",
+            "incident_subcategory": "Night Operations Without Proper Lighting",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "880e8400-e29b-41d4-a716-446655440003",
+            "date": "2025-01-12T18:00:00Z"
+          },
+          {
+            "incident_code": "0011-010",
+            "incident_category": "Mid-Air Collisions / Near-Misses",
+            "incident_subcategory": "Near Mid-Air Collision (NMAC)",
+            "severity": "HIGH",
+            "resolved": false,
+            "session_id": "aa0e8400-e29b-41d4-a716-446655440005",
+            "date": "2025-03-14T11:00:00Z"
+          },
+          {
+            "incident_code": "0100-100",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "Communication Loss (C2 Link)",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "cc0e8400-e29b-41d4-a716-446655440007",
+            "date": "2025-05-07T15:30:00Z"
+          },
+          {
+            "incident_code": "0100-001",
+            "incident_category": "Loss of Control / Malfunctions",
+            "incident_subcategory": "GPS or Navigation Failure",
+            "severity": "MEDIUM",
+            "resolved": false,
+            "session_id": "550e8400-e29b-41d4-a716-446655440015",
+            "date": "2026-01-18T14:15:00Z"
+          }
+        ],
+        "unresolved_incidents_present": true,
+        "total_incidents": 4,
+        "recent_incidents_count": 0
+      },
+      "risk_assessment": {
+        "risk_level": "HIGH",
+        "blocking_factors": [
+          "unresolved_high_severity_incident"
+        ],
+        "confidence_factors": [
+          "no_recent_incidents"
+        ]
+      },
+      "drp_sessions_count": 21,
+      "demo_steady_max_kt": 15.0,
+      "demo_gust_max_kt": 15.0,
+      "incident_codes": [
+        "0101-100",
+        "0011-010",
+        "0011-010",
+        "0100-100",
+        "0101-100",
+        "0100-001"
+      ],
+      "n_0100_0101": 4,
+      "recommendation_prose": "Historical risk signal: HIGH. Sessions=21, demo wind envelope steady=15.0 kt gust=15.0 kt; n_0100_0101=4, unresolved_incidents_present=True.",
+      "recommendation": "HIGH",
+      "why_prose": "drp_sessions_count=21; demo_steady_max_kt=15.0; demo_gust_max_kt=15.0; n_0100_0101=4; unresolved_incidents_present=True; incident_prefixes_present=['0101', '0011', '0100']",
+      "why": [
+        "drp_sessions_count=21",
+        "demo_steady_max_kt=15.0",
+        "demo_gust_max_kt=15.0",
+        "n_0100_0101=4",
+        "unresolved_incidents_present=True",
+        "incident_prefixes_present=['0101', '0011', '0100']"
+      ]
+    },
+    "claims_agent": {
+      "called": false,
+      "satisfied": false,
+      "resolved_incident_prefixes": [],
+      "unresolved_incident_prefixes": [],
+      "satisfied_actions": [],
+      "unsatisfied_actions": [],
+      "recommendation_prose": "",
+      "why_prose": "",
+      "why": []
+    },
+    "rule_trace": [
+      "STATE_3_RULE_PAYLOAD_EXCEEDS_MFC_MAX"
+    ]
+  }
+}

@@ -1,85 +1,69 @@
 # SADE Agentic Orchestration System
 
-A safety-critical, evidence-driven system for automatically determining whether a Drone | Pilot | Organization (DPO) trio may enter a controlled SADE Zone. The system uses real-time environmental conditions, historical reputation data, and formal evidence attestations to make deterministic, auditable admission decisions.
+A safety-critical, evidence-driven system for automatically determining whether a Drone | Pilot | Organization (DPO) trio may enter a controlled SADE Zone. The system uses environmental conditions (including live weather when configured), historical reputation data, and formal evidence attestations to make auditable admission decisions.
+
+## Where the project is today
+
+- **Orchestrator and sub-agents** use the **OpenAI Agents SDK** (`openai-agents`) with **`gpt-5.2`** and prompts under **`v5_prompts/`** (this is the active prompt set; older iterations remain in `v1_prompts/`–`v4_prompts/` for comparison).
+- **Single-run flow**: `process_entry_request()` runs the orchestrator once; if the model emits STATE 3 `ACTION-REQUIRED` without calling `claims_agent`, a **one-shot corrective rerun** is attempted with an injected framework message (`main.py`).
+- **Environment tooling**: `retrieveEnvironment` can use **Open-Meteo** for live US-area forecasts when mock weather is off; **mock wind/visibility profiles** remain for deterministic scenario runs (`tools/environment_tools.py`, `tools/open_meteo.py`).
+- **Location for weather**: Before the run, `resolve_entry_request_location()` may set `weather_latitude` / `weather_longitude` from explicit coordinates in `request_payload` or from **`request_payload.location_query`** via **Google Geocoding** (`tools/location_resolution.py`). If nothing resolves, tools fall back to waypoints, polygon centroid, or a configurable US default (`SADE_WEATHER_LAT` / `SADE_WEATHER_LON`).
+- **SafeCert / attestation agent**: The `action_required_agent` and `request_attestation` tool are **present in code but commented out** in `main.py`; the current loop does not expose them to the orchestrator. Claims verification via `claims_agent` is active when the prompt path requires it.
+- **Outputs**: Runs write human-readable traces plus full JSON (`decision` + `visibility`) under **`results/`**, including **`live-environment/{good,medium,bad}/`** alongside older **weather** and **mfc-payload** scenario folders.
 
 ## Overview
 
-The Safety-Aware Drone Ecosystem (SADE) admission system replaces manual authorization with a **deterministic, evidence-driven, auditable agentic workflow**. The system operates in two phases:
+The Safety-Aware Drone Ecosystem (SADE) admission system implements a **deterministic, evidence-driven, auditable agentic workflow**. Conceptually:
 
-- **Phase 1 - Fast Path**: Gathers environment and reputation data, makes immediate decisions when safe
-- **Phase 2 - Evidence Escalation**: Triggers SafeCert attestation workflow when additional evidence or mitigation is required
+- **Phase 1 – Fast path**: Gather environment and reputation signals; decide when conditions are clear.
+- **Phase 2 – Evidence escalation**: When the policy requires it, escalate to additional evidence and claims checks (per orchestrator state machine in `v5_prompts/orchestrator_prompt.md`).
 
 ## Architecture
 
-The system uses a multi-agent architecture with a single decision authority:
+Multi-agent setup with a **single decision authority**:
 
-### Orchestrator Agent (Decision Authority)
-- Receives entry requests
-- Delegates to sub-agents for data retrieval
-- Performs pair-wise analysis (Request × Environment, Request × Reputation, Environment × Reputation)
-- Generates evidence requirements when needed
-- Issues the **only** entry decision
+### Orchestrator Agent (decision authority)
 
-### Sub-Agents (Advisory Only)
+- Accepts formatted entry requests.
+- Delegates to sub-agents for data only.
+- Performs pairwise analysis (Request × Environment, Request × Reputation, Environment × Reputation).
+- Emits evidence requirements when needed.
+- Issues the **only** entry decision (plus required visibility metadata).
 
-#### Environment Agent
-- **Purpose**: Retrieve external operating conditions
-- **Data**: Weather (wind, gusts, precipitation, visibility), light conditions, airspace/spatial constraints, manufacturer flight constraints (MFC)
-- **Tools**: `retrieveEnvironment`, `retrieveMFC`
+### Sub-agents (advisory only)
 
-#### Reputation Agent
-- **Purpose**: Retrieve historical trust and reliability signals
-- **Data**: Pilot, organization, and drone reputation scores; incident history (including unresolved incidents)
-- **Tool**: `retrieve_reputations`
+| Agent | Role | Tools |
+|--------|------|--------|
+| **Environment** | Operating conditions: weather, light, airspace/spatial notes, MFC | `retrieveEnvironment`, `retrieveMFC` |
+| **Reputation** | Trust signals: pilot, org, drone; incidents | `retrieve_reputations` |
+| **Claims** | Verify required actions vs. DPO claims / follow-ups | `retrieve_claims` |
 
-#### Claims Agent
-- **Purpose**: Verify required actions against DPO claims and follow-up records
-- **Data**: Checks satisfaction of required actions, resolves incident prefixes, tracks unresolved incidents
-- **Tool**: `retrieve_claims`
-- **Note**: Called when ACTION-REQUIRED decision is issued to verify evidence satisfaction
+The **Action Required / SafeCert** interface (`request_attestation`) exists in `tools/action_required_tools.py` but is **not wired** into the orchestrator agent in the current `main.py`.
 
-#### Action Required Agent (SafeCert Interface)
-- **Purpose**: Interface with SafeCert/Proving Grounds
-- **Function**: Requests and retrieves formal evidence attestations
-- **Tool**: `request_attestation`
-- **Note**: Never makes admission decisions
-
-## Entry Request Model
+## Entry request model
 
 Each entry request includes:
 
-- `sade_zone_id`: Target SADE zone identifier
-- `pilot_id`: FAA pilot registration (e.g., "FA-01234567")
-- `organization_id`: Organization identifier
-- `drone_id`: Drone identifier
-- `requested_entry_time`: ISO8601 datetime string
-- `request_type`: One of `ZONE`, `REGION`, or `ROUTE`
-- `request_payload`: Type-specific payload
-  - **ZONE**: Full zone access
-  - **REGION**: `polygon` (lat/lon coordinates), `ceiling`, `floor` (meters ASL)
-  - **ROUTE**: Ordered `waypoints` (lat, lon, altitude ASL)
+- `sade_zone_id`, `pilot_id`, `organization_id`, `drone_id`
+- `requested_entry_time`: ISO8601 string (optional duplicate `entry_time` is normalized in code)
+- `payload`: mass (string or number) where applicable
+- `request_type`: `ZONE`, `REGION`, or `ROUTE`
+- `request_payload`: type-specific (polygons, waypoints, ceiling/floor, optional **`location_query`** for geocoded weather, or explicit `lat`/`lon`)
 
-## Decision Outputs
+Shared helpers: `tools/entry_request_fields.py` (canonical `entry_time` for tools).
 
-The Orchestrator outputs exactly one of:
+## Decision outputs
 
-- `APPROVED`: Entry allowed without constraints
-- `APPROVED-CONSTRAINTS,(...)`: Entry allowed with enforceable operational limits
-- `ACTION-REQUIRED,(...)`: Additional evidence/certification required (includes evidence requirement JSON)
-- `DENIED,(DENIAL_CODE, explanation)`: Fundamentally unsafe or policy-forbidden
+The orchestrator emits exactly one of:
 
-## Evidence Grammar
+- `APPROVED`
+- `APPROVED-CONSTRAINTS,(...)`
+- `ACTION-REQUIRED,(...)`
+- `DENIED,(DENIAL_CODE, explanation)`
 
-Evidence is expressed using a formal grammar with four fixed categories:
+## Evidence grammar
 
-- **CERTIFICATION**: Regulatory certifications (e.g., PART_107, BVLOS)
-- **CAPABILITY**: Operational capabilities (e.g., NIGHT_FLIGHT, PAYLOAD limits)
-- **ENVIRONMENT**: Environmental mitigations (e.g., MAX_WIND_GUST)
-- **INTERFACE**: System interface compatibility (e.g., SADE_ATC_API versions)
-
-Evidence appears in two forms:
-- **Evidence Requirement**: Requested when more proof is needed
-- **Evidence Attestation**: Returned by SafeCert with satisfaction status
+Evidence uses four categories (**CERTIFICATION**, **CAPABILITY**, **ENVIRONMENT**, **INTERFACE**). See `models.py` and `v5_prompts/` for the exact contract.
 
 ## Installation
 
@@ -90,49 +74,36 @@ Evidence appears in two forms:
 
 ### Setup
 
-1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd agentic-sade-dev
-```
-
-2. Install dependencies:
-```bash
 pip install -r requirements.txt
 ```
 
-Note: The project uses the **OpenAI Agents SDK** (`openai-agents`), which provides the `agents` module (`Agent`, `Runner`, `trace`).
+Dependencies include **openai-agents**, **openai**, **pydantic**, and **httpx** (Open-Meteo and HTTP calls).
 
-### API Configuration
+### API keys and environment
 
-The system uses OpenAI models via the Agents SDK. At minimum, you must configure your OpenAI API key:
+| Variable | Purpose |
+|----------|---------|
+| `OPENAI_API_KEY` | Required for model calls |
+| `SADE_WEATHER_LAT`, `SADE_WEATHER_LON` | Optional defaults when no geometry or query resolves (see `environment_tools.py`) |
 
-```bash
-export OPENAI_API_KEY=sk-...
-```
+Geocoding for `location_query` uses the Google Geocoding API path in `location_resolution.py` (ensure your deployment supplies valid credentials / keys as required by that module).
 
-You can further customize model selection and other settings following the OpenAI Agents SDK documentation.
+### Rate limiting
 
-### Rate Limiting
-
-When processing multiple requests in batch, the system includes a configurable delay between requests to avoid hitting API rate limits. The default delay is set to 60 seconds in `main.py`. To adjust this delay, modify the `asyncio.sleep()` value in the `main()` function:
-
-```python
-# In main.py
-await asyncio.sleep(60.0)  # Adjust delay as needed
-```
-
-**Note**: Rate limits vary by model and organization. If you encounter rate limit errors (HTTP 429), increase the delay between requests or consider using a model with higher rate limits.
+`main()` sleeps **60 seconds** after a run to reduce API rate-limit issues. Adjust the `asyncio.sleep()` value in `main.py` if needed.
 
 ## Usage
 
-### Basic Example
+### Programmatic
 
 ```python
 import asyncio
 from main import process_entry_request
 
-async def main():
+async def run():
     request = {
         "sade_zone_id": "ZONE-123",
         "pilot_id": "FA-01234567",
@@ -140,6 +111,7 @@ async def main():
         "drone_id": "DRONE-001",
         "requested_entry_time": "2026-01-26T14:00:00Z",
         "request_type": "REGION",
+        "payload": "5.0",
         "request_payload": {
             "polygon": [
                 {"lat": 41.7000, "lon": -86.2400},
@@ -147,158 +119,86 @@ async def main():
                 {"lat": 41.7010, "lon": -86.2390},
                 {"lat": 41.7000, "lon": -86.2390},
             ],
-            "ceiling": 300,  # meters ASL
-            "floor": 100,    # meters ASL
+            "ceiling": 300,
+            "floor": 100,
         },
     }
-    
-    decision = await process_entry_request(request)
-    print(decision)
+    out = await process_entry_request(request)
+    print(out["decision"])
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(run())
 ```
 
-### Running the Example
+### CLI
 
 ```bash
 python main.py
 ```
 
-By default, the script reads `sade-mock-data/entry_requests.json`, processes the first entry request, and writes a result file into one of the scenario-specific subdirectories under `results/` (for example, `results/mfc-payload/mfc-payload-bad/entry_result_{ZONE_ID}.txt`). You can modify the loop in `main()` to process additional requests or change which scenario directory is used.
+The sample `main()` loads **`sade-mock-data/entry_requests.json`**, picks a request (currently the first “good” example is assigned to `request`), runs `process_entry_request`, and writes a file under **`results/`** (the exact subdirectory is set in `main.py`—e.g. live-environment vs. weather scenarios). Edit `main()` to point at another index or output path.
 
-### GUI Visualizer
+### GUI visualizer
 
-This repository includes a PyQt5 GUI for visualizing orchestrator decisions and sub-agent visibility.
+PyQt5 app for inspecting saved result files:
 
-- **Launch without a file** (empty state):
-  ```bash
-  python gui.py
-  ```
-- **Launch with a specific result file**:
-  ```bash
-  python gui.py results/mfc-payload/mfc-payload-bad/entry_result_ZONE-001.txt
-  ```
+```bash
+python gui.py
+python gui.py results/live-environment/good/entry_result_ZONE-003.txt
+```
 
-The GUI also exposes presets for the bundled demo scenarios:
+Bundled **presets** in the GUI cover **Weather · Wind** (good/medium/bad) and **MFC/Payload** (good/medium/bad). Add live-environment samples manually via **Open file** or extend `PRESETS` in `gui.py` if you want one-click access.
 
-- `Weather · Wind Good` / `Medium` / `Bad`
-- `MFC/Payload · Good` / `Medium` / `Bad`
+## Decision flow (high level)
 
-## Decision Flow
+1. Validate / normalize request (including location resolution).
+2. Retrieve environment and reputation signals via tools.
+3. Pair-wise analysis and state machine (see `v5_prompts/orchestrator_prompt.md`).
+4. If `ACTION-REQUIRED` from STATE 3, **claims_agent** must be invoked before a final JSON; code enforces this where applicable.
+5. Emit final JSON with `decision` and `visibility`.
 
-The Orchestrator follows a mandatory state machine:
+Max turns per run default to **25** (`DEFAULT_MAX_TURNS` in `main.py`).
 
-1. **Validate Request**: Check request format and required fields
-2. **Retrieve Signals**: Call Environment and Reputation agents
-3. **Pair-wise Analysis**: 
-   - Request × Environment
-   - Request × Reputation
-   - Environment × Reputation
-4. **Initial Decision**: Fast path decision (APPROVED, APPROVED-CONSTRAINTS, ACTION-REQUIRED, or DENIED)
-5. **Claims Verification**: If ACTION-REQUIRED, verify required actions against DPO claims using Claims Agent
-6. **Evidence Escalation**: If needed, request attestations from SafeCert via Action Required Agent
-7. **Re-evaluation**: Evaluate attestation satisfaction and claims verification results
-8. **Final Decision**: Emit final decision
-
-The orchestrator runs in a single pass (no outer loop) and must emit a final decision within the maximum turn limit (default 25 turns, see `DEFAULT_MAX_TURNS` in `main.py`).
-
-## Project Structure
+## Project structure
 
 ```
 agentic-sade-dev/
-├── main.py                        # CLI entry point and orchestration logic
-├── gui.py                         # PyQt5 GUI for visualizing decisions
-├── models.py                      # Pydantic models for agent outputs and evidence grammar
+├── main.py                     # Agents, process_entry_request, CLI example
+├── gui.py                      # PyQt5 decision visualizer
+├── models.py                   # Pydantic models, evidence shapes
 ├── tools/
-│   ├── environment_tools.py       # Environment agent tools (weather, MFC, spatial constraints)
-│   ├── reputation_tools.py        # Reputation agent tools
-│   ├── claims_tools.py            # Claims agent tools
-│   └── action_required_tools.py   # SafeCert interface tools (mock implementation)
-├── v4_prompts/                    # Current agent prompts (orchestrator + sub‑agents)
-│   ├── orchestrator_prompt.md
-│   ├── env_agent_prompt.md
-│   ├── rm_agent_prompt.md
-│   └── claims_agent_prompt.md
-├── v3_prompts/                    # Prior prompt iteration (kept for comparison)
-├── v2_prompts/                    # Earlier prompt iteration (kept for comparison)
-├── v1_prompts/                    # Legacy prompts (original design)
-├── sade-mock-data/                # Mock data for testing
-│   ├── entry_requests.json        # Example entry requests
-│   ├── reputation_model.json      # Sample reputation model data
-│   └── user_input.json            # Sample user input / claims data
-├── results/                       # Output directory for decision results
-│   ├── weather/
-│   │   ├── wind-visibility-good/
-│   │   ├── wind-visibility-medium/
-│   │   └── wind-visibility-bad/
-│   └── mfc-payload/
-│       ├── mfc-payload-good/
-│       ├── mfc-payload-medium/
-│       └── mfc-payload-bad/
-├── other/
-│   └── project_overview.md        # Detailed architecture and policy documentation
-├── to-dos.md                      # Development notes and follow-up tasks
-├── requirements.txt               # Python dependencies (OpenAI Agents SDK, etc.)
-└── README.md                      # This file
+│   ├── environment_tools.py    # MFC + weather (Open-Meteo / mock)
+│   ├── open_meteo.py           # Open-Meteo client helpers
+│   ├── location_resolution.py  # Geocoding / weather lat-lon prep
+│   ├── entry_request_fields.py # entry_time normalization
+│   ├── reputation_tools.py
+│   ├── claims_tools.py
+│   └── action_required_tools.py  # SafeCert mock (not wired in main.py)
+├── v5_prompts/                 # Active prompts (orchestrator + sub-agents)
+├── v4_prompts/ … v1_prompts/   # Historical prompts
+├── sade-mock-data/             # entry_requests.json, reputation, claims fixtures
+├── results/
+│   ├── weather/wind-visibility-{good,medium,bad}/
+│   ├── mfc-payload/mfc-payload-{good,medium,bad}/
+│   └── live-environment/{good,medium,bad}/
+├── other/project_overview.md   # Deeper architecture notes
+├── to-dos.md
+├── requirements.txt
+└── README.md
 ```
 
-## Development Notes
+## Development notes
 
-### Safety-Critical Design Principles
-
-- **Conservative**: When uncertain, require evidence
-- **Evidence-driven**: Never assume unstated capabilities or certifications
-- **Deterministic**: Follow the decision state machine exactly
-- **Auditable**: Every decision must be defensible
-- **Minimalism**: Request only the smallest set of evidence required
-
-### Tool Communication Protocol
-
-- Sub-agent tools accept **JSON string** inputs (not Python dicts)
-- Tools return validated **Pydantic model** outputs (automatically validated)
-- Field name mapping:
-  - Entry Request `organization_id` → tool input `org_id`
-  - Entry Request `requested_entry_time` → tool input `entry_time`
-
-### Mock Implementations
-
-The current tool implementations (`environment_tools.py`, `reputation_tools.py`, `claims_tools.py`, `action_required_tools.py`) are **mock implementations** for testing. In production, these would:
-
-- Call actual weather APIs and airspace databases (Environment Agent)
-- Query the Reputation Model Profile endpoint (Reputation Agent)
-- Query DPO claims and follow-up records (Claims Agent)
-- Interface with the SafeCert API (Action Required Agent)
-
-### Constraints
-
-Constraints are enforceable operational limits such as:
-- `SPEED_LIMIT(7m/s)`
-- `MAX_ALTITUDE(300m)`
-- Reduced region polygons
-- Modified route waypoints
-
-Constraints must be:
-- Justified by environment or geometry
-- NOT replace missing certifications or mitigations
+- **Conservative / evidence-driven / auditable** design goals are unchanged; see existing sections in `other/project_overview.md`.
+- **Tool I/O**: Sub-agent tools expect **JSON strings**; returns are validated toward Pydantic models where defined.
+- **Mocks**: Reputation, claims, and MFC file paths remain mock-oriented; weather can be live or profile-driven depending on tool configuration.
 
 ## Testing
 
-The system processes example requests from `sade-mock-data/entry_requests.json`. To test different scenarios:
-
-1. Modify the entry requests in `sade-mock-data/entry_requests.json`
-2. Or modify the `main()` function to process specific requests
-3. Results are written to `results/entry_result_{ZONE_ID}.txt`
-
-**Note**: When processing multiple requests, the system includes a 60-second delay between requests to avoid API rate limits. Adjust this delay in `main.py` if needed based on your API rate limits.
+Use `sade-mock-data/entry_requests.json` and tune `main()` to iterate requests. Result files land under `results/.../entry_result_{ZONE_ID}.txt` (naming may vary with zone id).
 
 ## Contributing
 
-This is a safety-critical system. All changes must:
-- Maintain deterministic behavior
-- Preserve auditability
-- Follow the evidence grammar specification
-- Not bypass safety checks
+Changes should preserve deterministic policy behavior, auditability, and the evidence grammar—no silent bypass of safety checks.
 
 ## License
 
@@ -306,7 +206,7 @@ This is a safety-critical system. All changes must:
 
 ## References
 
-- See `other/project_overview.md` for detailed architecture documentation
-- See `v4_prompts/orchestrator_prompt.md` for the current Orchestrator decision logic
-- See `models.py` for complete data model specifications
-- See `v4_prompts/` directory for all current agent prompts (and `v1_prompts/`–`v3_prompts/` for historical versions)
+- `other/project_overview.md` — extended architecture
+- `v5_prompts/orchestrator_prompt.md` — current orchestrator logic
+- `models.py` — data models
+- `v1_prompts/`–`v4_prompts/` — prompt history

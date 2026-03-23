@@ -186,12 +186,15 @@ def retrieve_claims(input_json: str) -> ClaimsAgentOutput:
         satisfied/unsatisfied_actions, and why.
     """
     data = json.loads(input_json)
+    entry_time = data.get("entry_time") or data.get("requested_entry_time")
+    if not entry_time:
+        raise ValueError("retrieve_claims requires entry_time or requested_entry_time")
     return _retrieve_claims_impl(
         action_id=data.get("action_id", ""),
         pilot_id=data["pilot_id"],
         org_id=data["org_id"],
         drone_id=data["drone_id"],
-        entry_time=data["entry_time"],
+        entry_time=entry_time,
         required_actions=data.get("required_actions", []),
         incident_codes=data.get("incident_codes", []),
         wind_context=data.get("wind_context", {}),
