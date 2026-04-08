@@ -6,7 +6,7 @@ ensuring type safety and automatic validation.
 """
 
 from typing import List, Optional, Dict, Any, Literal, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================================
@@ -118,13 +118,26 @@ class EvidenceSubject(BaseModel):
     drone_id: str
 
 
+class EvidenceRequirementParamObject(BaseModel):
+    """Structured param object for ``EvidenceRequirement.params`` (strict JSON Schema)."""
+    model_config = ConfigDict(extra="ignore")
+
+    prefix: Optional[str] = None
+    incident_code: Optional[str] = None
+    incident_codes: Optional[List[str]] = None
+    key: Optional[str] = None
+    value: Optional[str] = None
+
+
 class EvidenceRequirement(BaseModel):
     """Single evidence requirement."""
+    requirement_id: str
     expr: str
     keyword: str
-    params: List[Union[str, Dict[str, str]]] = Field(
+    applicable_scopes: List[Literal["PILOT", "UAV"]] = Field(default_factory=list)
+    params: List[Union[str, EvidenceRequirementParamObject]] = Field(
         default_factory=list,
-        description="Can be empty list, list of strings, or list of {'key': 'value'} dicts"
+        description="Empty list, string tokens, or small structured objects (prefix/incident_code/etc.).",
     )
 
 
@@ -156,9 +169,9 @@ class AttestedRequirement(BaseModel):
     """A requirement in an attestation."""
     expr: str
     keyword: str
-    params: List[Union[str, Dict[str, str]]] = Field(
+    params: List[Union[str, EvidenceRequirementParamObject]] = Field(
         default_factory=list,
-        description="Can be empty list, list of strings, or list of {'key': 'value'} dicts"
+        description="Empty list, string tokens, or structured param objects.",
     )
     meta: RequirementMeta
 
@@ -213,6 +226,7 @@ class ClaimsAgentOutput(BaseModel):
     unresolved_incident_prefixes: List[str] = Field(default_factory=list)
     satisfied_actions: List[str] = Field(default_factory=list)
     unsatisfied_actions: List[str] = Field(default_factory=list)
+    evidence_requirement_spec: Optional[EvidenceRequirementPayload] = None
     recommendation_prose: str = ""
     why_prose: str = ""
     why: List[str] = Field(default_factory=list)
@@ -225,15 +239,132 @@ class ClaimsAgentOutput(BaseModel):
 # environment_agent -> EnvironmentAgentOutput, reputation_agent -> ReputationAgentOutput,
 # claims_agent -> wrapper with called + ClaimsAgentOutput (when called).
 
-class EntryRequestVisibility(BaseModel):
-    """Visibility copy of the entry request (must match input field names)."""
-    sade_zone_id: str
+class EntryRequestUAV(BaseModel):
+    drone_id: str
+    model_id: str
+    owner_id: str
+
+
+class EntryRequestUAVModel(BaseModel):
+    model_id: str
+    name: str
+    max_wind_tolerance: float  # knots
+    max_temp_f: float
+    min_temp_f: float
+    max_payload_cap_kg: float
+
+
+class EntryRequestPilot(BaseModel):
     pilot_id: str
     organization_id: str
+
+
+class EntryRequestZone(BaseModel):
+    sade_zone_id: str
+    name: str
+
+
+class WeatherForecast(BaseModel):
+    sade_zone_id: str
+    window_start: str
+    window_end: str
+    max_wind_knots: float
+    max_gust_knots: float
+    min_temp_f: float
+    max_temp_f: float
+    precipitation_summary: str
+    visibility_min_nm: float
+    source: str
+    confidence: float
+    generated_at: str
+
+
+class AttestationClaim(BaseModel):
+    requirement_id: str
+    category: str
+    expr: str
+    keyword: str
+    status: str
+    params: List[Union[str, Dict[str, str]]] = Field(default_factory=list)
+    applicable_scopes: List[Literal["PILOT", "UAV"]] = Field(default_factory=list)
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    issued_at: Optional[str] = None
+    expires_at: Optional[str] = None
+    evidence_ref: Optional[str] = None
+    signature_ref: Optional[str] = None
+
+
+class ReputationTelemetry(BaseModel):
+    altitude_min_m: float
+    altitude_max_m: float
+    battery_start_pct: float
+    battery_end_pct: float
+    battery_voltage_start_v: float
+    battery_voltage_end_v: float
+
+
+class ReputationFlight(BaseModel):
+    max_alt_asl_m: float
+    distance_flown_mi: float
+
+
+class ReputationPayload(BaseModel):
+    total_weight_kg: float
+    camera: str
+    other: str
+
+
+class ReputationBatteryVoltage(BaseModel):
+    A: float
+    B: float
+
+
+class ReputationBattery(BaseModel):
+    voltage_in: ReputationBatteryVoltage
+    voltage_out: ReputationBatteryVoltage
+    recharge_in_zone: bool
+    types: str
+
+
+class ReputationRecord(BaseModel):
+    evaluation_id: str
+    evaluation_series_id: str
+    reputation_record_id: str
+    applicable_scopes: List[Literal["PILOT", "UAV"]] = Field(default_factory=list)
+    pilot_id: str
     drone_id: str
-    payload: str
+    telemetry: ReputationTelemetry
+    weather_observed: WeatherForecast
+    zone: EntryRequestZone
+    time_in: str
+    time_out: str
+    flight: ReputationFlight
+    payload: ReputationPayload
+    battery: ReputationBattery
+    number_of_recharges: int
+    incidents: List[str] = Field(default_factory=list)
+    entry_decision: str
+
+
+class EntryRequestVisibility(BaseModel):
+    """Visibility copy of the nested entry request shape."""
+    evaluation_id: str
+    evaluation_series_id: str
+    submitted_at: str
+    entry_request_kind: str
+    request_time: str
     requested_entry_time: str
-    request_type: str
+    requested_exit_time: str
+    payload: str
+    uav: EntryRequestUAV
+    uav_model: EntryRequestUAVModel
+    pilot: EntryRequestPilot
+    zone: EntryRequestZone
+    attestation_claims: List[AttestationClaim] = Field(default_factory=list)
+    reputation_records: List[ReputationRecord] = Field(default_factory=list)
+    weather_forecast: WeatherForecast
+    test_overrides: Dict[str, Any] = Field(default_factory=dict)
+    entry_request_history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class ClaimsAgentVisibility(BaseModel):
@@ -244,6 +375,7 @@ class ClaimsAgentVisibility(BaseModel):
     unresolved_incident_prefixes: List[str] = Field(default_factory=list)
     satisfied_actions: List[str] = Field(default_factory=list)
     unsatisfied_actions: List[str] = Field(default_factory=list)
+    evidence_requirement_spec: Optional[EvidenceRequirementPayload] = None
     recommendation_prose: str = ""
     why_prose: str = ""
     why: List[str] = Field(default_factory=list)
@@ -265,6 +397,7 @@ class Decision(BaseModel):
     constraints: List[str] = Field(default_factory=list)
     action_id: Optional[str] = None
     actions: List[str] = Field(default_factory=list)
+    evidence_requirement_spec: Optional[EvidenceRequirementPayload] = None
     denial_code: Optional[str] = None
     explanation: str = ""
 
