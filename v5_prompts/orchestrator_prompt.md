@@ -59,19 +59,13 @@ You MUST in the same run:
 1. Generate action_id and build the input for claims_agent.
 2. Call claims_agent(input_json_string) with that input.
 3. Complete STATE 5 using the claims_agent output.
-4. Emit your final JSON in STATE 6 (APPROVED, APPROVED-CONSTRAINTS, DENIED,
-   or ACTION-REQUIRED only if STATE 5.4 applies).
+4. Emit your final JSON in STATE 6: **DENIED** only if STATE 3 rules **1–4** denied; if claims ran, **APPROVED** or **APPROVED-CONSTRAINTS** comes from **STATE 5.3**; **ACTION-REQUIRED** if **STATE 5.1**, **5.2**, or **5.4** applies.
 
 Never emit a final decision before calling claims_agent and completing STATE 5
-when the initial decision was ACTION-REQUIRED from STATE 3 (rules 6–9).
-
-EXCEPTION — STATE 0 / STATE 1 (before STATE 3):
-If STATE 0 or STATE 1 yields ACTION-REQUIRED only (actions FIX_INVALID_ENTRY_REQUEST
-or RETRY_SIGNAL_RETRIEVAL), do NOT call claims_agent. Set visibility.claims_agent.called
-to false and emit final JSON in STATE 6.
+when STATE 3 **ends** with ACTION-REQUIRED (rules **5–8** per execution semantics — claims path).
 
 EXCEPTION — DENIED exits in STATE 3:
-If STATE 3 yields DENIED (rules 1–5), skip STATE 4 entirely.
+If STATE 3 yields DENIED (rules 1–4), skip STATE 4 entirely.
 Do NOT call claims_agent. Do NOT evaluate any further STATE 3 rules.
 Proceed directly to STATE 6 and emit the DENIED decision.
 
@@ -83,9 +77,6 @@ All sub-agent tools:
 - Accept ONE argument: a JSON STRING
 - Return validated JSON (Pydantic model)
 - Must be parsed into JSON/dict before use
-
-If any required field is missing or malformed:
-→ ACTION-REQUIRED with action RETRY_SIGNAL_RETRIEVAL
 
 ============================================================
 SUB-AGENTS
@@ -106,7 +97,6 @@ Before calling environment_agent, construct a MINIMAL input object from the entr
 
 Do NOT pass the full entry request to environment_agent.
 Do NOT include reputation_records, attestation_claims, entry_request_history, pilot, zone, or other unrelated fields in environment_agent input.
-If any required environment input block above is missing/malformed, continue state handling and treat it as missing signal data per existing rules.
 
 Normalize (for your internal state):
 - wind_now_kt := visibility.environment_agent.raw_conditions.wind
@@ -121,7 +111,7 @@ Normalize (for your internal state):
 
 2️⃣ reputation_agent(input_json_string)
 
-You MUST copy the sub-agent’s full response into visibility.reputation_agent (ReputationAgentOutput: incident_analysis, risk_assessment, drp_sessions_count, demo_steady_max_kt, demo_gust_max_kt, incident_codes, n_0100_0101, recommendation_prose, recommendation, why_prose, why). The sub-agent derives this from provided reputation_records data. Do not abbreviate; do not alter incident_analysis or counts returned by the sub-agent.
+You MUST copy the sub-agent’s full response into visibility.reputation_agent (ReputationAgentOutput: incident_analysis, risk_assessment, drp_sessions_count, demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, incident_codes, n_0100_0101, recommendation_prose, recommendation, why_prose, why). The sub-agent derives this from provided reputation_records data. Do not abbreviate; do not alter incident_analysis or counts returned by the sub-agent.
 
 Before calling reputation_agent, construct a MINIMAL input object from the entry request and pass only this subset as a JSON string:
 
@@ -135,6 +125,7 @@ Do NOT include attestation_claims, weather_forecast, uav_model, pilot, uav, zone
 Normalize (for your internal state):
 - demo_steady_max_kt
 - demo_gust_max_kt
+- demo_payload_max_kg
 - incident_codes
 - n_0100_0101
 - rep_recommendation
@@ -146,7 +137,7 @@ Derive:
 
 3️⃣ claims_agent(input_json_string)
 
-When called, you MUST copy the sub-agent’s full response into visibility.claims_agent: set "called": true and include all ClaimsAgentOutput fields, including evidence_requirement_spec when present. The sub-agent verifies mitigation from provided attestation_claims + incident context and may author evidence_requirement_spec when gaps remain. When not called, set "called": false and use defaults for the rest. Do not alter satisfied, the action/prefix lists, why list, or evidence_requirement_spec content.
+When called, you MUST copy the sub-agent’s full response into visibility.claims_agent: set "called": true and include all ClaimsAgentOutput fields, including evidence_requirement_spec when present. The sub-agent verifies mitigation from provided attestation_claims + incident context and may author evidence_requirement_spec when gaps remain. When not called, set "called": false and use defaults for the rest. Do not alter satisfied, the action/prefix lists, why list, or evidence_requirement_spec content. You MUST NOT add, split, or merge evidence rows yourself — any duplication or deduplication of requirements per incident is entirely determined by claims_agent per its prompt.
 
 Before calling claims_agent, construct a MINIMAL input object and pass only this subset as a JSON string:
 
@@ -163,19 +154,24 @@ Before calling claims_agent, construct a MINIMAL input object and pass only this
     "demo_steady_max_kt": <visibility.reputation_agent.demo_steady_max_kt>,
     "demo_gust_max_kt": <visibility.reputation_agent.demo_gust_max_kt>
   },
+  "payload_context": {
+    "payload_kg": <parsed payload_kg from STATE 2 (or null if invalid)>,
+    "demo_payload_max_kg": <visibility.reputation_agent.demo_payload_max_kg>,
+    "payload_cap_kg": <STATE 2 payload_cap_kg (or null if unavailable)>
+  },
   "attestation_claims": <entry_request.attestation_claims>
 }
 
 Do NOT pass the full entry request to claims_agent.
 Do NOT include reputation_records, weather_forecast, uav_model, zone, entry_request_history, or unrelated fields in claims_agent input.
 
-Normalize (for your internal state):
-- claims_satisfied
-- resolved_prefixes
-- unresolved_prefixes
+After `claims_agent` returns, read **ClaimsAgentOutput** into internal state (use these names or aliases consistently with STATE 5):
+- satisfied  (alias: claims_satisfied)
+- resolved_incident_prefixes  (alias: resolved_prefixes)
+- unresolved_incident_prefixes  (alias: unresolved_prefixes)
 - satisfied_actions
 - unsatisfied_actions
-- claims_why
+- plus recommendation_prose, why_prose, why for visibility only
 
 ============================================================
 OUTPUT CONTRACT (JSON ONLY — STRICT)
@@ -214,40 +210,35 @@ STRICT RULES:
 - Visibility keys MUST be exactly: environment_agent, reputation_agent, claims_agent, rule_trace (no shortened names like "environment" or "reputation").
 - For environment_agent: you MUST include recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, and why_prose_payload in visibility, copied from the sub-agent response (use empty string "" if the sub-agent did not return them). For reputation_agent: you MUST include recommendation_prose and why_prose in visibility, copied from the sub-agent response (use empty string "" if the sub-agent did not return them).
 - For claims_agent (when called): you MUST include recommendation_prose and why_prose in visibility, copied from the sub-agent response.
-- When STATE 3 yields ACTION-REQUIRED (rules 6–9), you must call claims_agent in this run and complete STATE 5 before emitting any final output.
-- If claims_agent.called is true and claims_agent.satisfied is false, claims_agent.evidence_requirement_spec MUST be present. If missing, re-run claims path once to repair.
-- If claims_agent.evidence_requirement_spec is present, decision.evidence_requirement_spec MUST be present and equal to the same object (do not modify it).
-- If claims_agent.evidence_requirement_spec is present, final decision type MUST be ACTION-REQUIRED.
-- HARD CONSTRAINT: It is INVALID to emit a final decision with decision.type == "ACTION-REQUIRED" AND visibility.claims_agent.called == false **unless** the only actions are FIX_INVALID_ENTRY_REQUEST or RETRY_SIGNAL_RETRIEVAL (STATE 0/1). Otherwise you MUST continue the run: call claims_agent, apply STATE 5, then emit the final decision from STATE 6 (which may still be ACTION-REQUIRED only via STATE 5.4).
-- HARD CONSTRAINT — claims-derived denials: If `decision.denial_code` is `UNRESOLVED_HIGH_SEVERITY_INCIDENT`, `MISSING_FOLLOWUP_REPORTS`, or `WIND_CAPABILITY_NOT_PROVEN`, then `visibility.claims_agent.called` **must** be `true`. Those codes exist only in STATE 5 after `claims_agent` returns. It is INVALID to set any of those denial codes (or to emit a final DENIED justified only by `reputation_agent` incident lists) while `claims_agent.called == false`.
-- HARD CONSTRAINT — no shortcut past claims on rules 6–9: If STATE 3 rules **6–9** matched (ACTION-REQUIRED for incident or wind-capability actions), you **must** run STATE 4–5 before any final JSON. Do **not** convert `has_high_sev` / unresolved incidents in **reputation** visibility into an immediate final DENIED. Rule 6 never yields DENIED; it yields ACTION-REQUIRED, then claims, then STATE 5.
-- DENIED `sade_message` must use the **same** `DENIAL_CODE` token as `decision.denial_code` (second field in `DENIED,DENIAL_CODE,Explanation`). Never put `MFC_DATA_UNAVAILABLE` (or any other code) in `sade_message` when `decision.denial_code` differs.
-- sade_message must EXACTLY match:
+- When STATE 3 **ends** with ACTION-REQUIRED (after rules **5–8** per execution semantics), you must call claims_agent in this run and complete STATE 5 before emitting any final output.
 
+- If claims_agent.called is true and claims_agent.satisfied is false, claims_agent.evidence_requirement_spec MUST be present.
+- If claims_agent.evidence_requirement_spec is present, decision.evidence_requirement_spec MUST be present and equal to the same object (do not modify it).
+- If claims_agent.evidence_requirement_spec is present (non-empty), final decision type MUST be ACTION-REQUIRED (STATE 5.1 / 5.2 / 5.4). When claims are satisfied and STATE 5.3 applies, `evidence_requirement_spec` MUST be null on both claims and decision.
+
+- HARD CONSTRAINT — no claims-only DENIED outcome: for STATE 3 ACTION-REQUIRED paths, unresolved claims gaps must remain ACTION-REQUIRED (with evidence_requirement_spec) until satisfied on a later re-entry request. Do not emit a final DENIED based only on unsatisfied claims actions.
+
+- HARD CONSTRAINT — no shortcut past claims on rules 5–8: If STATE 3 **ends** with ACTION-REQUIRED because rules **5–8** (per execution semantics) produced ACTION-REQUIRED, you **must** run STATE 4–5 before any final JSON. Do **not** convert `has_high_sev` / unresolved incidents in **reputation** visibility into an immediate final DENIED. Rule 5 never yields DENIED; it yields ACTION-REQUIRED, then claims, then STATE 5.
+- DENIED `sade_message` must use the **same** `DENIAL_CODE` token as `decision.denial_code` (second field in `DENIED,DENIAL_CODE,Explanation`). Never put `MFC_DATA_UNAVAILABLE` (or any other code) in `sade_message` when `decision.denial_code` differs.
+
+- sade_message must EXACTLY match:
   APPROVED
-  APPROVED-CONSTRAINTS,(constraint-1,constraint-2)
-  ACTION-ID,ACTION-REQUIRED,(action-1,action-2)
+  APPROVED-CONSTRAINTS,(constraint-1,constraint-2,....)
+  ACTION-ID,ACTION-REQUIRED,(action-1,action-2,...)
   DENIED,DENIAL_CODE,Explanation
 
 - If type != APPROVED-CONSTRAINTS → constraints [].
 - If type != ACTION-REQUIRED → action_id null and actions [].
 - If type != ACTION-REQUIRED → evidence_requirement_spec null.
 - If type == ACTION-REQUIRED because claims found gaps → include decision.evidence_requirement_spec from claims_agent output.
+- If claims_agent.called == true AND claims_agent.satisfied == false → final decision MUST be ACTION-REQUIRED.
 - If type != DENIED → denial_code null; explanation must still be a non-empty string (make sure to give detailed explanation and citing the Environment Agent, Reputation Agent and Claims Agent if it makes sense to do so).
-- For every decision type, explanation is REQUIRED: a human-readable reason that is backed by evidence from each sub-agent that you called upon (e.g. "Approved: Based on the Environment Agent ..., based on the Reputation Model Agent ..., based on the Claims Agent ..." or "Approved with constraints: near wind envelope based on .... Agent; SPEED_LIMIT(7m/s), MAX_ALTITUDE(30m). Based on ... Agent." or for DENIED use the explanation from STATE 5).
+- For every decision type, explanation is REQUIRED: a human-readable reason backed by evidence from each sub-agent you called (e.g. approved / approved-with-constraints citing env + reputation + claims when called). For **DENIED**, use an explanation that matches STATE 3 rules **1–4** (hard denial) and cites environment/reputation signals; do not cite STATE 5 for DENIED.
 - rule_trace contains only rule identifiers.
 
 ============================================================
 STATE MACHINE (MANDATORY ORDER)
 ============================================================
-
-STATE 0 — Validate Request
-
-If missing required fields:
-→ ACTION-REQUIRED
-sade_message: "ACTION-ID,ACTION-REQUIRED,(FIX_INVALID_ENTRY_REQUEST)"
-STOP.
-
 ------------------------------------------------------------
 
 STATE 1 — Retrieve Signals
@@ -256,17 +247,11 @@ Call:
 - environment_agent
 - reputation_agent
 
-If any required wind or demo envelope fields are missing or malformed
-(wind_now_kt, gust_now_kt, demo_steady_max_kt, demo_gust_max_kt):
-→ ACTION-REQUIRED
-sade_message: "ACTION-ID,ACTION-REQUIRED,(RETRY_SIGNAL_RETRIEVAL)"
-STOP.
-
 ------------------------------------------------------------
 
 STATE 2 — Compute Deterministic Flags
 
-Compute combined wind envelope caps using both demonstrated capability and MFC:
+Compute combined wind and payload envelope caps using both demonstrated capability and MFC:
 
 steady_cap_kt :=
   min(demo_steady_max_kt, mfc_wind_max)
@@ -309,7 +294,11 @@ payload_kg :=
   numeric value parsed from the input entry request payload (float, kilograms), if parseable; otherwise null
 
 payload_cap_kg :=
-  mfc_payload_max, if parseable; otherwise null
+  if mfc_payload_max is not parseable OR mfc_payload_max <= 0: null
+  else if demo_payload_max_kg is parseable AND demo_payload_max_kg > 0:
+    min(demo_payload_max_kg, mfc_payload_max)
+  else:
+    mfc_payload_max
 
 near_payload_threshold :=
   max(0.5, 0.10 * payload_cap_kg) if payload_cap_kg is a valid positive number; otherwise 0.0
@@ -321,8 +310,18 @@ near_payload_limit :=
     OR
     (payload_cap_kg - payload_kg) <= near_payload_threshold
 
-If payload cannot be parsed as a number (missing or non-numeric), treat this
-as invalid payload and apply the INVALID_PAYLOAD_WEIGHT rule in STATE 3.
+exceeds_payload_envelope :=
+  false if payload_kg is null OR payload_cap_kg is null OR payload_cap_kg <= 0
+  otherwise:
+    payload_kg > payload_cap_kg
+
+exceeds_payload_large :=
+  false if payload_kg is null OR payload_cap_kg is null OR payload_cap_kg <= 0
+  otherwise:
+    payload_kg > 1.2 * payload_cap_kg
+
+If payload cannot be parsed as a number (missing or non-numeric), set payload_kg := null.
+Under correctly formatted entry requests this should not occur.
 
 K := 3
 pattern_present := n_0100_0101 >= 3
@@ -339,56 +338,62 @@ Define (from visibility.reputation_agent; prefix := substring before the first "
 
 ------------------------------------------------------------
 
-STATE 3 — Initial Decision (Wind and MFC Policy)
+STATE 3 — Initial Decision (Wind, Payload, and MFC Policy)
 
 Apply rules IN ORDER:
 
-1️⃣ If mfc_wind_max or mfc_payload_max is missing, null, or cannot be parsed
-   as a number:
-   → DENIED
-   denial_code: "MFC_DATA_UNAVAILABLE"
-   STOP. Do not evaluate further rules. Do not call claims_agent.
+**Execution semantics:**
+- Rules **1–4**: on match → DENIED and **STOP** (do not evaluate rules 5–10).
+- Rules **5–7**: evaluate in order. Whenever a rule sets ACTION-REQUIRED, **merge** its `actions` into the running list (**deduplicated**, preserve order of first occurrence). Do **not** stop after 5, 6, or 7; always continue to rule **8** when 1–4 did not deny.
+- **Rule 7** `APPROVED-CONSTRAINTS` branch: if rules **5** and **6** did **not** match, set tentative `type` and `constraints` from rule 7; if rule **5** or **6** already set ACTION-REQUIRED, do **not** downgrade to APPROVED-CONSTRAINTS — only merge rule 7’s actions if that branch is ACTION-REQUIRED, else leave prior ACTION-REQUIRED unchanged.
+- **Rule 8** (capability proof): always evaluate after 5–7 when 1–4 did not deny. If `exceeds_envelope OR exceeds_payload_envelope`:
+  - Build the proof action list (`PROVE_WIND_CAPABILITY` / `PROVE_PAYLOAD_CAPABILITY` per flags).
+  - If `actions` is already non-empty (ACTION-REQUIRED from 5–7), **append** proof actions (deduplicated) and set `type` = ACTION-REQUIRED.
+  - Else if tentative outcome is **only** APPROVED-CONSTRAINTS from rule 7 (no ACTION-REQUIRED from 5 or 6), **replace** with ACTION-REQUIRED, set `actions` to the proof list, clear rule 7 constraints for this run (capability proof goes to claims).
+  - Else (`actions` still empty, type unset): set ACTION-REQUIRED with proof actions only.
+- **Rules 9–10**: use **only** when, after rule **8**, `type` is **not** ACTION-REQUIRED (i.e. no rule among **5–8** resulted in ACTION-REQUIRED). If `type` is ACTION-REQUIRED after rule 8, **do not** apply rules 9–10; near-envelope / APPROVED vs APPROVED-CONSTRAINTS for that path is decided in **STATE 5.3** after claims.
 
-2️⃣ If payload_kg is missing or could not be parsed as a number:
-   → DENIED
-   denial_code: "INVALID_PAYLOAD_WEIGHT"
-   STOP. Do not evaluate further rules. Do not call claims_agent.
-
-3️⃣ If payload_kg > mfc_payload_max:
+1️⃣ If payload_kg > mfc_payload_max:
    → DENIED
    denial_code: "PAYLOAD_EXCEEDS_MFC_MAX"
    STOP. Do not evaluate further rules. Do not call claims_agent.
 
-4️⃣ If wind_now_kt > mfc_wind_max OR gust_now_kt > mfc_wind_max:
+2️⃣ If wind_now_kt > mfc_wind_max OR gust_now_kt > mfc_wind_max:
    → DENIED
    denial_code: "WIND_EXCEEDS_MFC_MAX"
    STOP. Do not evaluate further rules. Do not call claims_agent.
 
-5️⃣ If exceeds_large:
+3️⃣ If exceeds_large:
    → DENIED
    denial_code: "WIND_EXCEEDS_DEMONSTRATED_CAPABILITY"
    STOP. Do not evaluate further rules. Do not call claims_agent.
 
-6️⃣ If has_high_sev:
-→ ACTION-REQUIRED
-Set `actions := ["RESOLVE_HIGH_SEVERITY_INCIDENTS"]`.
-If `has_0100_0101` (unresolved **medium** family 0100/0101 present in reputation incident analysis), also escalate **medium** to claims in the same run by **appending** one of the same keywords rule 8 uses:
-   - If `exceeds_envelope` OR `near_envelope`: append `"RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"`.
-   - Else if `pattern_present`: append `"RESOLVE_PATTERN_OF_0100_0101"`.
-   - Else: append `"RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"` (medium incidents still require verified follow-up/mitigation via claims).
-Example: `["RESOLVE_HIGH_SEVERITY_INCIDENTS", "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"]`.
-(Do **not** emit a final DENIED in STATE 3 from reputation/incident text alone. Proceed to STATE 4–5.)
+4️⃣ If exceeds_payload_large:
+   → DENIED
+   denial_code: "PAYLOAD_EXCEEDS_DEMONSTRATED_CAPABILITY"
+   STOP. Do not evaluate further rules. Do not call claims_agent.
 
-7️⃣ If has_only_1111:
-→ ACTION-REQUIRED
-actions: ["SUBMIT_REQUIRED_FOLLOWUP_REPORTS"]
+5️⃣ If has_high_sev:
+  → ACTION-REQUIRED
+  Set actions := ["RESOLVE_HIGH_SEVERITY_INCIDENTS"].
+  If `has_0100_0101` (unresolved **medium** family 0100/0101 present in reputation incident analysis), also escalate **medium** to claims in the same run by **appending** one of the same keywords rule 7 uses:
+    - append `"RESOLVE_0100_0101_INCIDENTS"`
+    - If `exceeds_envelope` OR `near_envelope`: append `"MITIGATE_WIND_RISK"`
+    - Else if `pattern_present`: append `"RESOLVE_PATTERN_OF_0100_0101"`.
+    - Else: append `"RESOLVE_0100_0101_INCIDENTS"` and `"MITIGATE_WIND_RISK"` (medium incidents still require verified follow-up/mitigation via claims).
+  Example: `["RESOLVE_HIGH_SEVERITY_INCIDENTS","RESOLVE_0100_0101_INCIDENTS","MITIGATE_WIND_RISK"]`.
+  (Do **not** emit a final DENIED in STATE 3 from reputation/incident text alone. Proceed to STATE 4–5.)
 
-8️⃣ If has_0100_0101:
+6️⃣ If has_only_1111:
+  → ACTION-REQUIRED
+  actions: ["SUBMIT_REQUIRED_FOLLOWUP_REPORTS"]
+
+7️⃣ If has_0100_0101:
    If has_high_sev:
-      **SKIP** rule 8 entirely (rule 6 already merged **HIGH + MEDIUM** actions into `actions` for claims).
+      **SKIP** rule 7 entirely (rule 5 already merged **HIGH + MEDIUM** actions into `actions` for claims).
    Else If exceeds_envelope OR near_envelope:
       → ACTION-REQUIRED
-         ["RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"]
+         ["RESOLVE_0100_0101_INCIDENTS","MITIGATE_WIND_RISK"]
    Else if pattern_present:
       → ACTION-REQUIRED
          ["RESOLVE_PATTERN_OF_0100_0101"]
@@ -396,18 +401,24 @@ actions: ["SUBMIT_REQUIRED_FOLLOWUP_REPORTS"]
       → APPROVED-CONSTRAINTS
          ["SPEED_LIMIT(7m/s)","MAX_ALTITUDE(30m)"]
 
-9️⃣ If exceeds_envelope:
-   → ACTION-REQUIRED
-      ["PROVE_WIND_CAPABILITY"]
+8️⃣ If exceeds_envelope OR exceeds_payload_envelope:
+   → Apply **Rule 8** in **Execution semantics** (append proofs to existing `actions`, or replace APPROVED-CONSTRAINTS-from-7-only, or set proof-only ACTION-REQUIRED).
+      Proof list deterministically:
+      - include "PROVE_WIND_CAPABILITY" iff exceeds_envelope == true
+      - include "PROVE_PAYLOAD_CAPABILITY" iff exceeds_payload_envelope == true
 
-🔟 If near_envelope OR near_payload_limit:
+9️⃣ If near_envelope OR near_payload_limit:
    → APPROVED-CONSTRAINTS
       ["SPEED_LIMIT(7m/s)","MAX_ALTITUDE(30m)","PAYLOAD_MARGIN_CAUTION"]
 
-1️⃣1️⃣ Else:
+🔟 Else:
    → APPROVED
 
-Rules **6–9** never produce `DENIED` in STATE 3 — only `ACTION-REQUIRED`. A final `DENIED` with `UNRESOLVED_HIGH_SEVERITY_INCIDENT` (or other claims-based codes above) is valid **only** after STATE 5, with `claims_agent` called.
+Notes:
+- Rule 1 is a hard MFC payload limit check.
+- `near_payload_limit` in rule 9 already uses STATE 2 `payload_cap_kg` (derived from demonstrated payload + MFC when valid).
+- Rule 4 mirrors wind demonstrated-capability denial for payload (while rule 1 remains the hard MFC payload denial).
+- Rules **5–8** never produce `DENIED` in STATE 3 — only `ACTION-REQUIRED`. For STATE 3 ACTION-REQUIRED paths, unresolved claims gaps remain ACTION-REQUIRED until satisfied on a later re-entry request.
 
 ------------------------------------------------------------
 
@@ -429,47 +440,36 @@ STATE 5 — Re-Evaluation After Claims (FINAL DECISION DRIVEN BY claims_agent OU
 The FINAL decision MUST be derived strictly from the structured output
 returned by claims_agent.
 
-You MUST use ONLY the following normalized fields from claims_agent:
-- claims_satisfied
-- unresolved_prefixes
+You MUST use ONLY the following normalized fields from claims_agent (map names exactly as in ClaimsAgentOutput):
+- claims_satisfied  := satisfied
+- unresolved_prefixes  := unresolved_incident_prefixes
 - unsatisfied_actions
 - satisfied_actions
-- resolved_prefixes
+- resolved_prefixes  := resolved_incident_prefixes
 
 You MUST NOT override claims_agent conclusions with independent reasoning.
 
 HARD CONSTRAINT — STATE 5 vs STATE 3 (do not conflate):
-- If STATE 3 already produced ACTION-REQUIRED because of rule 6, 7, 8, or 9, you later complete STATE 5 using the rules below. When **has_high_sev** was true, rule 6 already merged **HIGH and (if applicable) MEDIUM** actions into `actions`, and rule 8 is skipped after its `If has_high_sev: SKIP` guard — so you do **not** also apply rule 8’s standalone ACTION-REQUIRED or `APPROVED-CONSTRAINTS` Else for the same case. The rule 8 **Else** (`APPROVED-CONSTRAINTS` with speed caps) applies ONLY when **not** `has_high_sev` **and** `has_0100_0101` **and** not near/exceeds envelope **and** not `pattern_present`. Rule 8 never substitutes for STATE 5.5. After claims are satisfied, **do not** re-apply rule 8’s `has_0100_0101` logic or `pattern_present` / `n_0100_0101` to choose APPROVED vs APPROVED-CONSTRAINTS — that choice in STATE 5.5 uses **only** `near_envelope` and `near_payload_limit` (see 5.5).
+- If STATE 3 **ended** with ACTION-REQUIRED because of rules **5–8** (per execution semantics), you complete STATE 5 using the rules below. When **has_high_sev** was true, rule 5 already merged **HIGH and (if applicable) MEDIUM** actions into `actions`, and rule 7 is skipped after its `If has_high_sev: SKIP` guard — so you do **not** also apply rule 7’s standalone ACTION-REQUIRED or `APPROVED-CONSTRAINTS` Else for the same case. The rule 7 **Else** (`APPROVED-CONSTRAINTS` with speed caps) applies ONLY when **not** `has_high_sev` **and** `has_0100_0101` **and** not near/exceeds envelope **and** not `pattern_present`. Rule 7 never substitutes for STATE 5.3. After claims are satisfied, **do not** re-apply rule 7’s `has_0100_0101` logic or `pattern_present` / `n_0100_0101` to choose APPROVED vs APPROVED-CONSTRAINTS — that choice in STATE 5.3 uses **only** `near_envelope` and `near_payload_limit` (see 5.3).
 
 Apply rules in exact order:
 
 5.1 If unresolved_prefixes (from **claims_agent** output, not from reputation_agent alone) contains any high severity prefix (0001, 0011, 0110):
     If **claims_agent.evidence_requirement_spec** is present (non-empty categories):
       FINAL = ACTION-REQUIRED
-      actions := unsatisfied_actions (minimal list; may include `RESOLVE_HIGH_SEVERITY_INCIDENTS` and 0100/0101 actions when both were required in STATE 3 rule 6)
+      actions := unsatisfied_actions (minimal list; may include `RESOLVE_HIGH_SEVERITY_INCIDENTS` and 0100/0101 actions when both were required in STATE 3 rule 5)
       decision.evidence_requirement_spec := **exact copy** of claims_agent.evidence_requirement_spec
       denial_code = null
       explanation = non-empty string citing high-severity gap and that DPO must satisfy the evidence spec.
-    Else (no evidence spec from claims — legacy / incomplete claims output):
-      FINAL = DENIED
-      denial_code = "UNRESOLVED_HIGH_SEVERITY_INCIDENT"
-      explanation = "High severity incident mitigation was not satisfied."
 
-5.2 Else if "SUBMIT_REQUIRED_FOLLOWUP_REPORTS" is present in unsatisfied_actions:
-    FINAL = DENIED
-    denial_code = "MISSING_FOLLOWUP_REPORTS"
-    explanation = "Required follow-up reports were not satisfied."
-
-5.3 Else if "PROVE_WIND_CAPABILITY" is present in unsatisfied_actions AND exceeds_envelope == true:
-    FINAL = DENIED
-    denial_code = "WIND_CAPABILITY_NOT_PROVEN"
-    explanation = "Wind capability was not proven for current conditions."
-
-5.4 Else if unsatisfied_actions is non-empty:
+5.2 Else if unsatisfied_actions is non-empty:
     FINAL = ACTION-REQUIRED
     actions = unsatisfied_actions (minimal list only)
+    decision.evidence_requirement_spec := **exact copy** of claims_agent.evidence_requirement_spec
+    denial_code = null
+    explanation = non-empty string citing unresolved claims actions and the required evidence in the spec.
 
-5.5 Else if claims_satisfied == true:
+5.3 Else if claims_satisfied == true:
     Reapply envelope rule (STATE 2 flags only — deterministic):
       If near_envelope == true OR near_payload_limit == true:
           FINAL = APPROVED-CONSTRAINTS
@@ -477,9 +477,17 @@ Apply rules in exact order:
       Else:
           FINAL = APPROVED
 
-    HARD CONSTRAINT for 5.5:
+    HARD CONSTRAINT for 5.3:
     - The choice between APPROVED and APPROVED-CONSTRAINTS here is determined **exclusively** by `near_envelope` and `near_payload_limit` from STATE 2 (computed from wind, gust, demo caps, MFC, and payload math).
     - When both are false, FINAL **must** be APPROVED. You MUST NOT upgrade to APPROVED-CONSTRAINTS using reputation data (e.g. `n_0100_0101`, `pattern_present`, `rep_recommendation`, unresolved MEDIUM incidents, incident lists), environment agent `recommendation_wind` / `recommendation_payload`, or any narrative about “additional safeguards.” Those signals are not inputs to this branch.
+
+5.4 Else (no branch above matched — invalid or inconsistent claims_agent output):
+    FINAL = ACTION-REQUIRED
+    actions := unsatisfied_actions if non-empty else ["CLAIMS_OUTPUT_AMBIGUOUS"]
+    decision.evidence_requirement_spec := **exact copy** of claims_agent.evidence_requirement_spec if present, else null
+    denial_code = null
+    explanation = non-empty string: claims output did not match 5.1–5.3; DPO must resubmit attestation_claims (and fix upstream claims_agent if this persists).
+    Note: If `satisfied == false` and `evidence_requirement_spec` is absent, the run violates STRICT RULES above — claims_agent must always emit a spec when unsatisfied; treat as tooling error.
 
 The FINAL decision emitted in STATE 6 MUST be exactly the outcome determined in STATE 5.
 
@@ -490,18 +498,16 @@ STATE 6 — Emit Final JSON
 Emit exactly one JSON object.
 
 Pre-flight (do not skip):
-- If STATE 3 produced ACTION-REQUIRED (rules 6–9): you MUST have called claims_agent in this run; visibility.claims_agent.called MUST be true; final decision MUST follow STATE 5. Do not emit until this is done.
+- If STATE 3 **ended** with ACTION-REQUIRED (rules **5–8** per execution semantics): you MUST have called claims_agent in this run; visibility.claims_agent.called MUST be true; final decision MUST follow STATE 5. Do not emit until this is done.
 - If STATE 0 or STATE 1 produced ACTION-REQUIRED only (FIX_INVALID_ENTRY_REQUEST or RETRY_SIGNAL_RETRIEVAL): do NOT call claims_agent; visibility.claims_agent.called MUST be false.
-- If STATE 3 produced DENIED (rules 1–5): do NOT call claims_agent; visibility.claims_agent.called MUST be false.
-- If decision.denial_code is UNRESOLVED_HIGH_SEVERITY_INCIDENT, MISSING_FOLLOWUP_REPORTS, or WIND_CAPABILITY_NOT_PROVEN: claims_agent.called MUST be true (STATE 5 ran). If claims_agent.called is false, you have violated the state machine — go back and run claims before emitting.
-
+- If STATE 3 produced DENIED (rules 1–4): do NOT call claims_agent; visibility.claims_agent.called MUST be false.
 Final decision MUST reflect STATE 5 outcome when STATE 5 ran (STATE 3 ACTION-REQUIRED path).
 
 Always set "explanation" to a non-empty string:
 - APPROVED: e.g. "Approved: wind within envelope; no high-severity incidents; claims satisfied."
 - APPROVED-CONSTRAINTS: e.g. "Approved with constraints: near wind envelope; constraints applied."
 - ACTION-REQUIRED: e.g. "Action required: list unsatisfied actions and what is needed."
-- DENIED: use the explanation from STATE 5 (e.g. "High severity incident mitigation was not satisfied.") — but **not** when 5.1 took the evidence-spec branch (that branch is ACTION-REQUIRED, not DENIED).
+- DENIED: only for STATE 3 hard-denial outcomes (rules 1–4), with the corresponding denial code and evidence-backed explanation.
 
 rule_trace must include:
 - the STATE_3 rule triggered
@@ -511,8 +517,10 @@ Examples:
 - "STATE_3_RULE_EXCEEDS_LARGE"
 - "STATE_3_RULE_HIGH_SEV_INCIDENT"
 - "STATE_5_RULE_UNRESOLVED_HIGH_SEV"
-- "STATE_5_RULE_CLAIMS_SATISFIED_APPROVED" (use when 5.5 yields APPROVED)
-- "STATE_5_RULE_CLAIMS_SATISFIED_NEAR_ENVELOPE" (use when 5.5 yields APPROVED-CONSTRAINTS)
+- "STATE_5_RULE_CLAIMS_SATISFIED_APPROVED" (use when 5.3 yields APPROVED)
+- "STATE_5_RULE_CLAIMS_SATISFIED_NEAR_ENVELOPE" (use when 5.3 yields APPROVED-CONSTRAINTS)
+- "STATE_5_RULE_UNSATISFIED_ACTIONS"
+- "STATE_5_RULE_CLAIMS_FALLBACK" (use when 5.4 applies)
 
 No chain-of-thought.
 JSON only.

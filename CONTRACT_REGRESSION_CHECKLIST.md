@@ -12,7 +12,7 @@ Goal: keep orchestrator/sub-agent contracts aligned and prevent schema drift.
 - Confirm `models.py` input contracts exist and match prompts:
   - `EnvironmentAgentInput`: `payload`, `uav`, `uav_model`, `weather_forecast`
   - `ReputationAgentInput`: `reputation_records`
-  - `ClaimsAgentInput`: `action_id`, `requested_entry_time`, `pilot`, `uav`, `required_actions`, `incident_codes`, `wind_context`, `attestation_claims`
+  - `ClaimsAgentInput`: `action_id`, `requested_entry_time`, `pilot`, `uav`, `required_actions`, `incident_codes`, `wind_context`, `payload_context`, `attestation_claims`
 - Confirm each v5 sub-agent prompt input section matches the corresponding `*AgentInput` model.
 - Confirm orchestrator prompt minimal payload blocks for each sub-agent match `models.py`.
 - Confirm `main.py` sub-agent tool descriptions match the same minimal payloads.
@@ -34,9 +34,10 @@ Goal: keep orchestrator/sub-agent contracts aligned and prevent schema drift.
   - has both `recommendation_wind` and `recommendation_payload`
   - includes `why_wind` and `why_payload`
 - `ReputationAgentOutput`
-  - includes `demo_steady_max_kt`, `demo_gust_max_kt`, `incident_codes`, `n_0100_0101`
+  - includes `demo_steady_max_kt`, `demo_gust_max_kt`, `demo_payload_max_kg`, `incident_codes`, `n_0100_0101`
 - `ClaimsAgentOutput`
-  - when `satisfied=false`, `evidence_requirement_spec` is present
+  - when `satisfied=false`, `evidence_requirement_spec` is present with **non-empty** `categories` (matches `main.py` `parse_orchestrator_output` guards)
+  - when `satisfied=true`, `evidence_requirement_spec` is null (STATE 5.3 approve path; orchestrator STRICT RULES)
   - includes `resolved_incident_prefixes` and `unresolved_incident_prefixes`
 - `OrchestratorOutput.visibility`
   - always includes full `environment_agent`, `reputation_agent`, `claims_agent`, `rule_trace`
@@ -57,6 +58,7 @@ Validate:
 - No schema/guardrail errors around claims:
   - `ACTION-REQUIRED` cannot finalize with `claims_agent.called=false` (except STATE 0/1 early actions)
   - if claims returns spec, decision echoes same spec
+  - claims `satisfied=true` must not pair with non-empty spec (orchestrator validation rejects)
 
 ## 5) Spot-Check Minimal Payload Intent
 

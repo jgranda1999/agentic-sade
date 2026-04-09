@@ -85,8 +85,16 @@ class ClaimsInputWindContext(BaseModel):
     demo_gust_max_kt: float
 
 
+class ClaimsInputPayloadContext(BaseModel):
+    """Payload context from orchestrator STATE 2 (requested mass + reputation + effective cap)."""
+
+    payload_kg: Optional[float] = None
+    demo_payload_max_kg: Optional[float] = None
+    payload_cap_kg: Optional[float] = None
+
+
 class ClaimsAgentInput(BaseModel):
-    """Minimal input contract passed from orchestrator to claims agent."""
+    """Minimal input contract passed from orchestrator to claims agent (matches v5 orchestrator claims JSON)."""
     action_id: str
     requested_entry_time: str = Field(..., description="ISO8601 datetime string")
     pilot: ClaimsInputPilot
@@ -94,6 +102,7 @@ class ClaimsAgentInput(BaseModel):
     required_actions: List[str] = Field(default_factory=list)
     incident_codes: List[str] = Field(default_factory=list)
     wind_context: ClaimsInputWindContext
+    payload_context: ClaimsInputPayloadContext
     attestation_claims: List[Dict[str, Any]] = Field(default_factory=list)
 
 
@@ -187,6 +196,7 @@ class ReputationAgentOutput(BaseModel):
     drp_sessions_count: int = 0
     demo_steady_max_kt: float = 0.0
     demo_gust_max_kt: float = 0.0
+    demo_payload_max_kg: float = 0.0
     incident_codes: List[str] = Field(default_factory=list)
     n_0100_0101: int = 0
     recommendation_prose: str = ""

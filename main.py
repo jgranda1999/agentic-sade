@@ -3,10 +3,14 @@ import json
 import re
 import sys, os
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 from resources import *
 
 from agents import Agent, Runner, trace, ModelSettings
+try:
+    from openai import APIConnectionError, APITimeoutError, RateLimitError, APIStatusError
+except Exception:  # pragma: no cover - keep runtime resilient if SDK shape changes
+    APIConnectionError = APITimeoutError = RateLimitError = APIStatusError = tuple()  # type: ignore
 
 # Single-run flow: orchestrator must not return until final decision (v2 prompt)
 DEFAULT_MAX_TURNS = 25
@@ -17,6 +21,7 @@ _ACTION_REQUIRED_NO_CLAIMS_ACTIONS = frozenset(
 )
 _CLAIMS_SPEC_MISSING_TOKEN = "claims_agent.evidence_requirement_spec missing"
 _CLAIMS_SPEC_CONFLICT_TOKEN = "claims_agent.evidence_requirement_spec conflicts with satisfied=true"
+_TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 def _claims_call_required(decision: Dict[str, Any]) -> bool:
@@ -57,87 +62,50 @@ def _claims_spec_present(claims: Dict[str, Any]) -> bool:
     return isinstance(spec, dict) and bool(spec.get("categories"))
 
 
-def _fallback_evidence_requirement_spec(request: Dict[str, Any], action_id: str) -> Dict[str, Any]:
-    """Build generic evidence requirement spec when claims output is malformed."""
-    zone = request.get("zone") or {}
-    pilot = request.get("pilot") or {}
-    uav = request.get("uav") or {}
-    return {
-        "type": "EVIDENCE_REQUIREMENT",
-        "spec_version": "1.0",
-        "request_id": action_id,
-        "subject": {
-            "sade_zone_id": zone.get("sade_zone_id", "UNKNOWN"),
-            "pilot_id": pilot.get("pilot_id", "UNKNOWN"),
-            "organization_id": pilot.get("organization_id", "UNKNOWN"),
-            "drone_id": uav.get("drone_id", "UNKNOWN"),
-        },
-        "categories": [
-            {
-                "category": "CAPABILITY",
-                "requirements": [
-                    {
-                        "requirement_id": "req-generic-mitigation-evidence",
-                        "expr": "PROVIDE_ADDITIONAL_EVIDENCE",
-                        "keyword": "PROVIDE_ADDITIONAL_EVIDENCE",
-                        "params": [],
-                        "applicable_scopes": ["PILOT", "UAV"],
-                    }
-                ],
-            }
-        ],
-    }
+def _iter_exception_chain(exc: BaseException) -> Iterable[BaseException]:
+    """Yield exception plus linked causes/contexts for robust classification."""
+    seen = set()
+    cur: BaseException | None = exc
+    while cur and id(cur) not in seen:
+        seen.add(id(cur))
+        yield cur
+        cur = (cur.__cause__ or cur.__context__)
 
 
-def _force_action_required_fallback(raw: str, request: Dict[str, Any]) -> Dict[str, Any]:
-    """Force generic ACTION-REQUIRED if claims still omits required evidence spec."""
-    parsed = _extract_json_object(raw) or {}
-    decision = parsed.setdefault("decision", {})
-    visibility = parsed.setdefault("visibility", {})
-    claims = visibility.setdefault("claims_agent", {})
-
-    action_id = decision.get("action_id") or f"REQ-{(request.get('evaluation_id') or 'GENERIC')[:8]}"
-    spec = _fallback_evidence_requirement_spec(request, action_id)
-    actions = decision.get("actions") or ["PROVIDE_ADDITIONAL_EVIDENCE"]
-
-    decision["type"] = "ACTION-REQUIRED"
-    decision["action_id"] = action_id
-    decision["actions"] = actions
-    decision["evidence_requirement_spec"] = spec
-    decision["constraints"] = []
-    decision["denial_code"] = None
-    decision["explanation"] = (
-        decision.get("explanation")
-        or "Claims verification output was incomplete; additional evidence is required to continue review."
-    )
-    decision["sade_message"] = f"ACTION-ID,{action_id},({','.join(actions)})"
-
-    claims["called"] = True
-    claims["satisfied"] = False
-    claims["evidence_requirement_spec"] = spec
-    claims.setdefault("satisfied_actions", [])
-    claims.setdefault("unsatisfied_actions", actions)
-    claims.setdefault("why", ["Claims output omitted evidence requirement spec; generic remediation requested."])
-    claims.setdefault("recommendation_prose", "Additional evidence is required before a final approval decision.")
-    claims.setdefault("why_prose", "Claims verification did not include a required evidence specification.")
-
-    visibility.setdefault("entry_request", request)
-    visibility.setdefault("rule_trace", [])
-    return parsed
+def _is_transient_transport_error(exc: BaseException) -> bool:
+    """
+    True only for transient API/transport failures.
+    Contract/validation errors must never be retried.
+    """
+    for err in _iter_exception_chain(exc):
+        if isinstance(err, (APIConnectionError, APITimeoutError, RateLimitError)):
+            return True
+        if isinstance(err, APIStatusError) and getattr(err, "status_code", None) in _TRANSIENT_STATUS_CODES:
+            return True
+    msg = str(exc).lower()
+    # Fallback for SDK-wrapped transport failures.
+    return any(tok in msg for tok in ("timeout", "timed out", "connection reset", "rate limit", "http 429", "http 503"))
 
 
-def _claims_conflict_debug_message(raw: str) -> str:
-    """Return compact debug context for claims spec/satisfied conflict."""
-    parsed = _extract_json_object(raw) or {}
-    decision = parsed.get("decision", {}) if isinstance(parsed, dict) else {}
-    claims = ((parsed.get("visibility") or {}).get("claims_agent") or {}) if isinstance(parsed, dict) else {}
-    return (
-        "Debug: claims output conflict after retry. "
-        f"decision.type={decision.get('type')}, "
-        f"claims.called={claims.get('called')}, "
-        f"claims.satisfied={claims.get('satisfied')}, "
-        f"claims.has_spec={_claims_spec_present(claims)}"
-    )
+async def _run_orchestrator_with_transport_retry(
+    formatted_request: str,
+    max_turns: int,
+    max_attempts: int = 3,
+) -> Any:
+    """Retry only transient API/transport failures with bounded backoff."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with trace("SADE Entry Request Processing"):
+                return await Runner.run(
+                    orchestrator_agent,
+                    formatted_request,
+                    max_turns=max_turns,
+                )
+        except Exception:
+            exc = sys.exc_info()[1]
+            if exc is None or not _is_transient_transport_error(exc) or attempt == max_attempts:
+                raise
+            await asyncio.sleep(min(2 ** (attempt - 1), 8))
 
 from models import (
     EnvironmentAgentOutput,
@@ -184,17 +152,10 @@ reputation_agent = Agent(
     output_type=ReputationAgentOutput,
     handoff_description=(
         "Analyzes provided reputation_records and returns deterministic "
-        "ReputationAgentOutput historical risk signals."
+        "ReputationAgentOutput (demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, "
+        "incident_codes, n_0100_0101, incident_analysis, risk_assessment, recommendation, why)."
     ),
 )
-
-# action_required_agent = Agent(
-#     name="action_required_agent",
-#     instructions=ACTION_REQUIRED_AGENT_PROMPT,
-#     output_type=ActionRequiredAgentOutput,
-#     tools=[request_attestation],
-#     handoff_description="Interfaces with SafeCert to request and retrieve formal evidence attestations",
-# )
 
 claims_agent = Agent(
     name="claims_agent",
@@ -203,8 +164,9 @@ claims_agent = Agent(
     instructions=CLAIMS_AGENT_PROMPT,
     output_type=ClaimsAgentOutput,
     handoff_description=(
-        "Verifies required_actions against provided attestation_claims and "
-        "incident context; returns ClaimsAgentOutput and evidence requirement spec when needed."
+        "Verifies required_actions against attestation_claims and incident context. "
+        "When satisfied is false, must return non-empty evidence_requirement_spec. "
+        "Input includes wind_context and payload_context per ClaimsAgentInput."
     ),
 )
 
@@ -231,26 +193,18 @@ orchestrator_agent = Agent(
                 "Analyze provided historical reputation_records for the current DPO context. "
                 "Input: JSON string with exactly the ReputationAgentInput subset: reputation_records. "
                 "Do not pass the full entry request and do not include unrelated blocks (attestation_claims, weather_forecast, uav_model, pilot, uav, zone, entry_request_history). "
-                "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, orchestration fields."
+                "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, incident_codes, and n_0100_0101."
             ),
         ),
-        # action_required_agent.as_tool(
-        #     tool_name="request_attestation",
-        #     tool_description=(
-        #         "Request evidence attestations from SafeCert. "
-        #         "Input: JSON string with keys: pilot_id, org_id, drone_id, entry_time, safecert_pin, evidence_required. "
-        #         "Returns: ActionRequiredAgentOutput (validated Pydantic model) with satisfied (boolean) and attestation. "
-        #         "Only call this when ACTION-REQUIRED decision has been issued."
-        #     ),
-        # ),
         claims_agent.as_tool(
             tool_name="claims_agent",
             tool_description=(
                 "Verify required_actions against provided attestation_claims and incident context. "
-                "Input: JSON string with exactly the ClaimsAgentInput subset: action_id, requested_entry_time, pilot, uav, required_actions, incident_codes, wind_context, and attestation_claims. "
+                "Input: JSON string with exactly the ClaimsAgentInput subset: action_id, requested_entry_time, pilot, uav, required_actions, incident_codes, wind_context, payload_context, and attestation_claims. "
                 "Do not pass the full entry request and do not include unrelated blocks (reputation_records, weather_forecast, uav_model, zone, entry_request_history). "
                 "Returns: ClaimsAgentOutput with satisfied, resolved/unresolved incident prefixes, satisfied/unsatisfied actions, "
-                "optional evidence_requirement_spec, and why. Call this when STATE 3 yields ACTION-REQUIRED before emitting any final decision."
+                "evidence_requirement_spec (required non-empty categories when satisfied=false), and why. "
+                "Call when STATE 3 ends with ACTION-REQUIRED; orchestrator completes STATE 5 before final JSON."
             ),
         ),
     ],
@@ -309,72 +263,17 @@ def format_entry_request(request: Dict[str, Any]) -> str:
     
     return "\n".join(lines)
 
-
-def _normalize_visibility(parsed: Dict[str, Any]) -> None:
-    """Normalize visibility aliases to the current nested entry_request shape."""
-    vis = parsed.get("visibility") or {}
-    entry = vis.get("entry_request") or {}
-    if not isinstance(entry, dict):
-        return
-    zone = entry.get("zone")
-    if isinstance(zone, dict) and "zone_id" in zone and "sade_zone_id" not in zone:
-        zone["sade_zone_id"] = zone.pop("zone_id")
-    pilot = entry.get("pilot")
-    if isinstance(pilot, dict) and "org_id" in pilot and "organization_id" not in pilot:
-        pilot["organization_id"] = pilot.pop("org_id")
-
-
-def _align_decision_with_claims_evidence_spec(parsed: Dict[str, Any]) -> None:
-    """
-    When claims_agent emits evidence_requirement_spec, decision must echo it.
-    If the model still emits DENIED (legacy STATE 5.1) while claims provided a spec,
-    align to ACTION-REQUIRED with the same spec (product rule: remediation via evidence).
-    """
-    decision = parsed.get("decision")
-    vis = parsed.get("visibility")
-    if not isinstance(decision, dict) or not isinstance(vis, dict):
-        return
-    claims = vis.get("claims_agent") or {}
-    if not isinstance(claims, dict) or not _claims_spec_present(claims):
-        return
-    spec = claims.get("evidence_requirement_spec")
-    if not isinstance(spec, dict):
-        return
-    decision["evidence_requirement_spec"] = spec
-    if decision.get("type") == "DENIED" and claims.get("called"):
-        actions = claims.get("unsatisfied_actions") or []
-        if not actions:
-            actions = ["PROVIDE_ADDITIONAL_EVIDENCE"]
-        rid = spec.get("request_id") or decision.get("action_id") or "ACT-REMEDIATION"
-        decision["type"] = "ACTION-REQUIRED"
-        decision["denial_code"] = None
-        decision["constraints"] = []
-        decision["action_id"] = rid
-        decision["actions"] = actions
-        decision["sade_message"] = f"ACTION-ID,{rid},({','.join(actions)})"
-        if not decision.get("explanation"):
-            decision["explanation"] = (
-                "Action required: claims verification requires additional evidence per "
-                "evidence_requirement_spec before a final admission decision."
-            )
-
-
 def parse_orchestrator_output(raw: str) -> Dict[str, Any]:
     """
     Parse the orchestrator's final output as JSON (v2/v3 contract: decision + visibility).
 
     Tries raw JSON first, then a single ```json ... ``` code block.
-    Normalizes visibility.entry_request to use sade_zone_id and organization_id.
+    Applies strict contract validation and fails on schema drift.
     Raises ValueError if no valid JSON object with "decision" is found.
     """
     parsed = _extract_json_object(raw)
     if isinstance(parsed, dict) and "decision" in parsed:
-        _normalize_visibility(parsed)
-        _align_decision_with_claims_evidence_spec(parsed)
-        try:
-            OrchestratorOutput.model_validate(parsed)
-        except Exception:
-            pass  # Keep permissive validation for compatibility while guardrails enforce critical rules.
+        OrchestratorOutput.model_validate(parsed)
         decision = parsed.get("decision", {})
         vis = parsed.get("visibility", {})
         claims = vis.get("claims_agent", {}) if isinstance(vis, dict) else {}
@@ -402,8 +301,8 @@ async def process_entry_request(
     Process an entry request through the SADE Orchestrator Agent (single run).
 
     The v2 orchestrator runs until it emits a final JSON (calling env, reputation,
-    and claims_agent as needed in one run). If the model emits STATE 3 ACTION-REQUIRED
-    without calling claims_agent, one corrective follow-up run is attempted.
+    and claims_agent as needed in one run). Contract violations are fail-fast.
+    Only transient OpenAI transport errors are retried.
 
     Args:
         request: Entry request dictionary
@@ -414,63 +313,12 @@ async def process_entry_request(
         Raises ValueError if output could not be parsed as JSON.
     """
     formatted_request = format_entry_request(request)
-    correction = (
-        "FRAMEWORK CORRECTION (mandatory): Your last JSON was invalid because "
-        "decision.type was ACTION-REQUIRED from STATE 3 but visibility.claims_agent.called "
-        "was false. In the same run you MUST call claims_agent with the correct "
-        "action_id and inputs, complete STATE 5 using its output, then emit exactly "
-        "one final JSON with claims_agent.called true. Do not emit final JSON until "
-        "this is done."
+    result = await _run_orchestrator_with_transport_retry(
+        formatted_request=formatted_request,
+        max_turns=max_turns,
     )
-    claims_spec_correction = (
-        "FRAMEWORK CORRECTION (mandatory): claims_agent returned satisfied=false without "
-        "evidence_requirement_spec. Re-run the claims path and ensure claims_agent output includes "
-        "a valid evidence_requirement_spec. Then copy that exact object to decision.evidence_requirement_spec "
-        "and emit one final JSON."
-    )
-    claims_conflict_correction = (
-        "FRAMEWORK CORRECTION (mandatory): claims_agent output is internally inconsistent because "
-        "evidence_requirement_spec was present while satisfied=true. Re-run claims verification and emit "
-        "a consistent result: if evidence_requirement_spec exists, satisfied must be false and final decision "
-        "must be ACTION-REQUIRED; if satisfied is true, omit evidence_requirement_spec."
-    )
-    with trace("SADE Entry Request Processing"):
-        result = await Runner.run(
-            orchestrator_agent,
-            formatted_request,
-            max_turns=max_turns,
-        )
     raw = result.final_output.strip()
-    try:
-        return parse_orchestrator_output(raw)
-    except ValueError as e:
-        if (
-            "claims_agent.called" not in str(e)
-            and _CLAIMS_SPEC_MISSING_TOKEN not in str(e)
-            and _CLAIMS_SPEC_CONFLICT_TOKEN not in str(e)
-        ):
-            raise
-        if "claims_agent.called" in str(e):
-            fix_prompt = correction
-        elif _CLAIMS_SPEC_MISSING_TOKEN in str(e):
-            fix_prompt = claims_spec_correction
-        else:
-            fix_prompt = claims_conflict_correction
-        with trace("SADE Entry Request Processing (claims correction)"):
-            result = await Runner.run(
-                orchestrator_agent,
-                formatted_request + "\n\n" + fix_prompt,
-                max_turns=max_turns,
-            )
-        raw = result.final_output.strip()
-        try:
-            return parse_orchestrator_output(raw)
-        except ValueError as e2:
-            if _CLAIMS_SPEC_MISSING_TOKEN in str(e2):
-                return _force_action_required_fallback(raw, request)
-            if _CLAIMS_SPEC_CONFLICT_TOKEN in str(e2):
-                raise ValueError(_claims_conflict_debug_message(raw))
-            raise
+    return parse_orchestrator_output(raw)
 
 # Main function
 async def main():

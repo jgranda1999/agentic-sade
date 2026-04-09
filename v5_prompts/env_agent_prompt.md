@@ -17,6 +17,8 @@ You must report:
 - MFC MAX WIND OPERATIONS
 - MFC PAYLOAD MAX
 
+**Orchestrator boundary:** The orchestrator combines **manufacturer limits** (from this agent) with **demonstrated** wind/payload envelopes from `reputation_agent` in STATE 2 (`steady_cap_kt`, `payload_cap_kg`, etc.). You do **not** receive `reputation_records`. Assess risk using **forecast wind/gust vs MFC** and **requested payload vs `mfc_payload_max_kg` only**; do not infer effective caps vs historical demonstration.
+
 You MUST NOT:
 - Evaluate pilot/organization/drone reputation
 - Make admission decisions (no APPROVED/DENIED)
