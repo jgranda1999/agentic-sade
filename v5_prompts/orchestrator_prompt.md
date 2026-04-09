@@ -140,7 +140,6 @@ OUTPUT CONTRACT (JSON ONLY — STRICT)
 
 Return exactly ONE JSON object. visibility MUST match models.py (OrchestratorOutput.Visibility):
 
-- visibility.entry_request: full nested entry request shape (echo of logical request used for decision)
 - visibility.environment_agent: FULL EnvironmentAgentOutput from environment_agent
 - visibility.reputation_agent: FULL ReputationAgentOutput from reputation_agent
 - visibility.claims_agent: called (bool); when called=true include all ClaimsAgentOutput fields (satisfied, resolved_incident_prefixes, unresolved_incident_prefixes, satisfied_actions, unsatisfied_actions, evidence_requirement_spec, recommendation_prose, why_prose, why)
@@ -158,7 +157,6 @@ Return exactly ONE JSON object. visibility MUST match models.py (OrchestratorOut
     "explanation": "string"
   },
   "visibility": {
-    "entry_request": { /* full nested entry request */ },
     "environment_agent": { /* full EnvironmentAgentOutput */ },
     "reputation_agent": { /* full ReputationAgentOutput */ },
     "claims_agent": { "called": true|false, "satisfied": bool, "resolved_incident_prefixes": [], "unresolved_incident_prefixes": [], "satisfied_actions": [], "unsatisfied_actions": [], "evidence_requirement_spec": null | { /* EvidenceRequirementPayload */ }, "recommendation_prose": "string", "why_prose": "string", "why": [] },
@@ -170,8 +168,7 @@ STRICT RULES:
 - JSON only.
 - No markdown.
 - No commentary.
-- visibility.entry_request MUST be the nested entry-request object shape from input (evaluation metadata, payload, uav, uav_model, pilot, zone, weather_forecast, attestation_claims, reputation_records, test_overrides, entry_request_history, etc.). Keep field names consistent with models.py. **Units:** `payload` is kilograms (string); `uav_model.max_wind_tolerance` is knots; `uav_model.max_payload_cap_kg` is kilograms; `weather_forecast` wind speeds are knots.
-- Visibility keys MUST be exactly: entry_request, environment_agent, reputation_agent, claims_agent, rule_trace (no shortened names like "environment" or "reputation").
+- Visibility keys MUST be exactly: environment_agent, reputation_agent, claims_agent, rule_trace (no shortened names like "environment" or "reputation").
 - For environment_agent: you MUST include recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, and why_prose_payload in visibility, copied from the tool response (use empty string "" if the tool did not return them). For reputation_agent: you MUST include recommendation_prose and why_prose in visibility, copied from the tool response (use empty string "" if the tool did not return them).
 - For claims_agent (when called): you MUST include recommendation_prose and why_prose in visibility, copied from the tool response.
 - When STATE 3 yields ACTION-REQUIRED (rules 6–9), you must call claims_agent in this run and complete STATE 5 before emitting any final output.
@@ -266,7 +263,7 @@ exceeds_large :=
 Also define:
 
 payload_kg :=
-  numeric value parsed from visibility.entry_request.payload (float, kilograms), if parseable; otherwise null
+  numeric value parsed from the input entry request payload (float, kilograms), if parseable; otherwise null
 
 payload_cap_kg :=
   mfc_payload_max, if parseable; otherwise null

@@ -1,134 +1,22 @@
 ======================================================================
 FINAL DECISION
 ======================================================================
-Type: ACTION-REQUIRED
-SADE Message: ACTION-ID,ACTION-REQUIRED,(RESOLVE_HIGH_SEVERITY_INCIDENTS,RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)
-Explanation: Action required: Environment Agent indicates wind (3 kt) and gusts (5 kt) are below MFC max wind (12.2 kt) and payload (1.0 kg) is below MFC max payload (2.268 kg). Reputation Agent reports unresolved incidents including high-severity prefix 0011 (0011-010) and medium prefix 0101 (0101-100). Claims Agent could not verify required incident-resolution actions and provided an evidence requirement spec for follow-up and mitigation artifacts; until satisfied, entry is not approved.
+Type: APPROVED
+SADE Message: APPROVED
+Explanation: Approved: Based on the Environment Agent, wind (3.0 kt) and gusts (5.0 kt) are well within both manufacturer (12.2 kt) and demonstrated (12.0 kt steady/15.0 kt gust) limits, and payload (1.0 kg) is within manufacturer limits (2.268 kg). Based on the Reputation Model Agent, a single unresolved MEDIUM (0101) incident exists, but there are no high severity unresolved incidents or recent (last 30 days) incidents, and all claims have been satisfied. No further action required.
 ======================================================================
 
 Full output (decision + visibility):
 {
   "decision": {
-    "type": "ACTION-REQUIRED",
-    "sade_message": "ACTION-ID,ACTION-REQUIRED,(RESOLVE_HIGH_SEVERITY_INCIDENTS,RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)",
+    "type": "APPROVED",
+    "sade_message": "APPROVED",
     "constraints": [],
-    "action_id": "act-b80eac98e26b49889179c4e84fc4530f-20260327T211947Z",
-    "actions": [
-      "RESOLVE_HIGH_SEVERITY_INCIDENTS",
-      "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"
-    ],
-    "evidence_requirement_spec": {
-      "type": "EVIDENCE_REQUIREMENT",
-      "spec_version": "1.0",
-      "request_id": "act-b80eac98e26b49889179c4e84fc4530f-20260327T211947Z",
-      "subject": {
-        "sade_zone_id": "",
-        "pilot_id": "pilot-001",
-        "organization_id": "org-001",
-        "drone_id": "drone-001"
-      },
-      "categories": [
-        {
-          "category": "CAPABILITY",
-          "requirements": [
-            {
-              "requirement_id": "req-followup-0011-010",
-              "expr": "FOLLOWUP_REPORT(incident_code=0011-010)",
-              "keyword": "FOLLOWUP_REPORT",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": "0011",
-                  "incident_code": "0011-010",
-                  "incident_codes": null,
-                  "key": null,
-                  "value": null
-                }
-              ]
-            },
-            {
-              "requirement_id": "req-mitigation-0011-010",
-              "expr": "MITIGATION_EVIDENCE(incident_code=0011-010)",
-              "keyword": "MITIGATION_EVIDENCE",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": "0011",
-                  "incident_code": "0011-010",
-                  "incident_codes": null,
-                  "key": null,
-                  "value": null
-                }
-              ]
-            },
-            {
-              "requirement_id": "req-followup-0101-100",
-              "expr": "FOLLOWUP_REPORT(incident_code=0101-100)",
-              "keyword": "FOLLOWUP_REPORT",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": "0101",
-                  "incident_code": "0101-100",
-                  "incident_codes": null,
-                  "key": null,
-                  "value": null
-                }
-              ]
-            },
-            {
-              "requirement_id": "req-mitigation-0101-100",
-              "expr": "MITIGATION_EVIDENCE(incident_code=0101-100)",
-              "keyword": "MITIGATION_EVIDENCE",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": "0101",
-                  "incident_code": "0101-100",
-                  "incident_codes": null,
-                  "key": null,
-                  "value": null
-                }
-              ]
-            },
-            {
-              "requirement_id": "req-wind-risk-mitigation-artifact",
-              "expr": "WIND_RISK_MITIGATION(incidents=[0101-100])",
-              "keyword": "WIND_RISK_MITIGATION",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": "0101",
-                  "incident_code": null,
-                  "incident_codes": [
-                    "0101-100"
-                  ],
-                  "key": null,
-                  "value": null
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
+    "action_id": null,
+    "actions": [],
+    "evidence_requirement_spec": null,
     "denial_code": null,
-    "explanation": "Action required: Environment Agent indicates wind (3 kt) and gusts (5 kt) are below MFC max wind (12.2 kt) and payload (1.0 kg) is below MFC max payload (2.268 kg). Reputation Agent reports unresolved incidents including high-severity prefix 0011 (0011-010) and medium prefix 0101 (0101-100). Claims Agent could not verify required incident-resolution actions and provided an evidence requirement spec for follow-up and mitigation artifacts; until satisfied, entry is not approved."
+    "explanation": "Approved: Based on the Environment Agent, wind (3.0 kt) and gusts (5.0 kt) are well within both manufacturer (12.2 kt) and demonstrated (12.0 kt steady/15.0 kt gust) limits, and payload (1.0 kg) is within manufacturer limits (2.268 kg). Based on the Reputation Model Agent, a single unresolved MEDIUM (0101) incident exists, but there are no high severity unresolved incidents or recent (last 30 days) incidents, and all claims have been satisfied. No further action required."
   },
   "visibility": {
     "entry_request": {
@@ -163,42 +51,74 @@ Full output (decision + visibility):
       },
       "attestation_claims": [
         {
-          "requirement_id": "req-part-107",
-          "category": "CERTIFICATION",
-          "expr": "PART_107",
-          "keyword": "PART_107",
-          "status": "SATISFIED",
-          "params": [],
-          "applicable_scopes": [
-            "PILOT"
-          ],
-          "meta": {
-            "status": "SATISFIED"
-          },
-          "issued_at": "2026-03-01T10:00:00Z",
-          "expires_at": "2027-03-01T10:00:00Z",
-          "evidence_ref": "attestation:ATT-2",
-          "signature_ref": null
-        },
-        {
           "requirement_id": "req-max-wind-gust",
           "category": "ENVIRONMENT",
-          "expr": "MAX_WIND_GUST(28mph)",
+          "expr": "MAX_WIND_GUST(24.3kt)",
           "keyword": "MAX_WIND_GUST",
           "status": "SATISFIED",
           "params": [
-            "28mph"
+            "24.3kt"
           ],
           "applicable_scopes": [
             "UAV"
           ],
           "meta": {
             "status": "SATISFIED",
-            "observed_max_wind_gust": "24mph"
+            "observed_max_wind_gust": "20.9kt"
           },
           "issued_at": "2026-03-01T10:00:00Z",
           "expires_at": null,
           "evidence_ref": "attestation:ATT-3",
+          "signature_ref": null
+        },
+        {
+          "requirement_id": "req-followup-0011-010",
+          "category": "CAPABILITY",
+          "expr": "FOLLOWUP_REPORT(incident_code=0011-010)",
+          "keyword": "FOLLOWUP_REPORT",
+          "status": "SATISFIED",
+          "params": [
+            {
+              "prefix": "0011",
+              "incident_code": "0011-010"
+            }
+          ],
+          "applicable_scopes": [
+            "PILOT",
+            "UAV"
+          ],
+          "meta": {
+            "incident_code": "0011-010",
+            "status": "SATISFIED"
+          },
+          "issued_at": "2026-03-27T14:00:00Z",
+          "expires_at": null,
+          "evidence_ref": "attestation:ATT-4",
+          "signature_ref": null
+        },
+        {
+          "requirement_id": "req-mitigation-0011-010",
+          "category": "CAPABILITY",
+          "expr": "MITIGATION_EVIDENCE(incident_code=0011-010)",
+          "keyword": "MITIGATION_EVIDENCE",
+          "status": "SATISFIED",
+          "params": [
+            {
+              "prefix": "0011",
+              "incident_code": "0011-010"
+            }
+          ],
+          "applicable_scopes": [
+            "PILOT",
+            "UAV"
+          ],
+          "meta": {
+            "incident_code": "0011-010",
+            "status": "SATISFIED"
+          },
+          "issued_at": "2026-03-27T14:00:00Z",
+          "expires_at": null,
+          "evidence_ref": "attestation:ATT-5",
           "signature_ref": null
         }
       ],
@@ -225,8 +145,8 @@ Full output (decision + visibility):
             "sade_zone_id": "zone-001",
             "window_start": "2026-03-09T18:00:00Z",
             "window_end": "2026-03-09T19:00:00Z",
-            "max_wind_knots": 24.0,
-            "max_gust_knots": 31.0,
+            "max_wind_knots": 12.0,
+            "max_gust_knots": 15.0,
             "min_temp_f": 73.0,
             "max_temp_f": 75.0,
             "precipitation_summary": "none",
@@ -242,7 +162,7 @@ Full output (decision + visibility):
           "time_in": "2024-10-15T10:00:00Z",
           "time_out": "2024-10-15T10:45:00Z",
           "flight": {
-            "max_alt_asl_m": 1500,
+            "max_alt_asl_m": 1500.0,
             "distance_flown_mi": 1.8
           },
           "payload": {
@@ -288,8 +208,8 @@ Full output (decision + visibility):
             "sade_zone_id": "zone-002",
             "window_start": "2026-04-02T14:30:00Z",
             "window_end": "2026-04-02T15:20:00Z",
-            "max_wind_knots": 26.0,
-            "max_gust_knots": 34.0,
+            "max_wind_knots": 7.0,
+            "max_gust_knots": 9.0,
             "min_temp_f": 70.0,
             "max_temp_f": 72.0,
             "precipitation_summary": "none",
@@ -305,7 +225,7 @@ Full output (decision + visibility):
           "time_in": "2024-11-08T14:30:00Z",
           "time_out": "2024-11-08T15:20:00Z",
           "flight": {
-            "max_alt_asl_m": 1800,
+            "max_alt_asl_m": 1800.0,
             "distance_flown_mi": 2.5
           },
           "payload": {
@@ -351,8 +271,8 @@ Full output (decision + visibility):
             "sade_zone_id": "zone-004",
             "window_start": "2026-06-12T18:00:00Z",
             "window_end": "2026-06-12T18:50:00Z",
-            "max_wind_knots": 32.0,
-            "max_gust_knots": 40.0,
+            "max_wind_knots": 3.0,
+            "max_gust_knots": 5.0,
             "min_temp_f": 73.0,
             "max_temp_f": 75.0,
             "precipitation_summary": "none",
@@ -368,7 +288,7 @@ Full output (decision + visibility):
           "time_in": "2025-01-12T18:00:00Z",
           "time_out": "2025-01-12T18:50:00Z",
           "flight": {
-            "max_alt_asl_m": 2000,
+            "max_alt_asl_m": 2000.0,
             "distance_flown_mi": 3.2
           },
           "payload": {
@@ -416,8 +336,8 @@ Full output (decision + visibility):
             "sade_zone_id": "zone-005",
             "window_start": "2026-07-20T09:00:00Z",
             "window_end": "2026-07-20T09:40:00Z",
-            "max_wind_knots": 31.0,
-            "max_gust_knots": 37.0,
+            "max_wind_knots": 7.0,
+            "max_gust_knots": 10.0,
             "min_temp_f": 68.0,
             "max_temp_f": 70.0,
             "precipitation_summary": "none",
@@ -433,7 +353,7 @@ Full output (decision + visibility):
           "time_in": "2025-02-20T09:00:00Z",
           "time_out": "2025-02-20T09:40:00Z",
           "flight": {
-            "max_alt_asl_m": 1650,
+            "max_alt_asl_m": 1650.0,
             "distance_flown_mi": 2.1
           },
           "payload": {
@@ -479,8 +399,8 @@ Full output (decision + visibility):
             "sade_zone_id": "zone-001",
             "window_start": "2026-08-14T11:00:00Z",
             "window_end": "2026-08-14T11:30:00Z",
-            "max_wind_knots": 20.0,
-            "max_gust_knots": 28.0,
+            "max_wind_knots": 5.0,
+            "max_gust_knots": 8.0,
             "min_temp_f": 66.0,
             "max_temp_f": 68.0,
             "precipitation_summary": "none",
@@ -496,7 +416,7 @@ Full output (decision + visibility):
           "time_in": "2025-03-14T11:00:00Z",
           "time_out": "2025-03-14T11:30:00Z",
           "flight": {
-            "max_alt_asl_m": 1400,
+            "max_alt_asl_m": 1400.0,
             "distance_flown_mi": 1.5
           },
           "payload": {
@@ -603,23 +523,19 @@ Full output (decision + visibility):
       "recommendation_payload": "LOW",
       "recommendation_prose_wind": "",
       "recommendation_prose_payload": "",
-      "why_prose_wind": "Wind (3 kt) and gusts (5 kt) are below the UAV MFC max wind limit (12.2 kt).",
-      "why_prose_payload": "Requested payload (1.0 kg) is below the UAV MFC max payload (2.268 kg).",
+      "why_prose_wind": "",
+      "why_prose_payload": "",
       "why_wind": [
         "wind_kt=3.0",
         "wind_gust_kt=5.0",
         "mfc_max_wind_kt=12.2",
-        "gust_delta_kt=2.0 (wind_gust_kt - wind_kt)",
-        "moderate_delta_threshold_kt=3.0 (max(3.0, 0.15*12.2))",
-        "severe_delta_threshold_kt=6.0 (max(6.0, 0.30*12.2))",
-        "wind_risk_level=LOW"
+        "risk_level=LOW"
       ],
       "why_payload": [
-        "payload_kg=1.0 (from input.payload)",
+        "payload_kg=1.0",
         "mfc_payload_max_kg=2.268",
-        "payload_ratio=0.441 (payload_kg/mfc_payload_max_kg)",
-        "near_payload_threshold_kg=0.5 (max(0.5, 0.10*2.268))",
-        "payload_risk_level=LOW"
+        "payload_ratio=0.441",
+        "risk_level=LOW"
       ]
     },
     "reputation_agent": {
@@ -639,7 +555,7 @@ Full output (decision + visibility):
             "incident_category": "0011",
             "incident_subcategory": "010",
             "severity": "HIGH",
-            "resolved": false,
+            "resolved": true,
             "session_id": "rep-005",
             "date": "2025-03-14T11:00:00Z"
           }
@@ -649,174 +565,49 @@ Full output (decision + visibility):
         "recent_incidents_count": 0
       },
       "risk_assessment": {
-        "risk_level": "HIGH",
+        "risk_level": "MEDIUM",
         "blocking_factors": [
-          "unresolved_high_severity_incident"
+          "unresolved_incidents_present"
         ],
         "confidence_factors": [
           "no_recent_incidents"
         ]
       },
       "drp_sessions_count": 5,
-      "demo_steady_max_kt": 32.0,
-      "demo_gust_max_kt": 40.0,
+      "demo_steady_max_kt": 12.0,
+      "demo_gust_max_kt": 15.0,
       "incident_codes": [
         "0101-100",
         "0011-010"
       ],
       "n_0100_0101": 1,
-      "recommendation_prose": "Historical risk signal: HIGH based on the presence of an unresolved HIGH-severity incident in prior reputation records.",
-      "recommendation": "HIGH",
-      "why_prose": "Across 5 historical sessions, max demonstrated winds were 32.0 kt steady / 40.0 kt gust. Two incidents are recorded (one HIGH, one MEDIUM); incidents are not marked resolved in the provided records, and none occurred within the last 30 days of the entry_time.",
+      "recommendation_prose": "There are 2 prior incidents (including 1 medium-severity unresolved incident and 1 previously high-severity incident that has been resolved). No recent (last 30 days) incidents. Risk signal is MEDIUM due to unresolved incidents.",
+      "recommendation": "MEDIUM",
+      "why_prose": "Risk signal is MEDIUM: 5 flights on record, max demonstrated wind 12.0kt (gusts 15.0kt), 2 total incidents (1 unresolved, 1 resolved), 0 recent incidents, 1 incident in 0100/0101 category.",
       "why": [
         "drp_sessions_count=5",
-        "demo_steady_max_kt=32.0",
-        "demo_gust_max_kt=40.0",
+        "demo_steady_max_kt=12.0",
+        "demo_gust_max_kt=15.0",
         "total_incidents=2",
         "unresolved_incidents_present=true",
-        "high_severity_unresolved_incidents=1",
         "recent_incidents_count=0",
         "n_0100_0101=1"
       ]
     },
     "claims_agent": {
-      "called": true,
+      "called": false,
       "satisfied": false,
       "resolved_incident_prefixes": [],
-      "unresolved_incident_prefixes": [
-        "0011",
-        "0101"
-      ],
+      "unresolved_incident_prefixes": [],
       "satisfied_actions": [],
-      "unsatisfied_actions": [
-        "RESOLVE_HIGH_SEVERITY_INCIDENTS",
-        "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"
-      ],
-      "evidence_requirement_spec": {
-        "type": "EVIDENCE_REQUIREMENT",
-        "spec_version": "1.0",
-        "request_id": "act-b80eac98e26b49889179c4e84fc4530f-20260327T211947Z",
-        "subject": {
-          "sade_zone_id": "",
-          "pilot_id": "pilot-001",
-          "organization_id": "org-001",
-          "drone_id": "drone-001"
-        },
-        "categories": [
-          {
-            "category": "CAPABILITY",
-            "requirements": [
-              {
-                "requirement_id": "req-followup-0011-010",
-                "expr": "FOLLOWUP_REPORT(incident_code=0011-010)",
-                "keyword": "FOLLOWUP_REPORT",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": "0011",
-                    "incident_code": "0011-010",
-                    "incident_codes": null,
-                    "key": null,
-                    "value": null
-                  }
-                ]
-              },
-              {
-                "requirement_id": "req-mitigation-0011-010",
-                "expr": "MITIGATION_EVIDENCE(incident_code=0011-010)",
-                "keyword": "MITIGATION_EVIDENCE",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": "0011",
-                    "incident_code": "0011-010",
-                    "incident_codes": null,
-                    "key": null,
-                    "value": null
-                  }
-                ]
-              },
-              {
-                "requirement_id": "req-followup-0101-100",
-                "expr": "FOLLOWUP_REPORT(incident_code=0101-100)",
-                "keyword": "FOLLOWUP_REPORT",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": "0101",
-                    "incident_code": "0101-100",
-                    "incident_codes": null,
-                    "key": null,
-                    "value": null
-                  }
-                ]
-              },
-              {
-                "requirement_id": "req-mitigation-0101-100",
-                "expr": "MITIGATION_EVIDENCE(incident_code=0101-100)",
-                "keyword": "MITIGATION_EVIDENCE",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": "0101",
-                    "incident_code": "0101-100",
-                    "incident_codes": null,
-                    "key": null,
-                    "value": null
-                  }
-                ]
-              },
-              {
-                "requirement_id": "req-wind-risk-mitigation-artifact",
-                "expr": "WIND_RISK_MITIGATION(incidents=[0101-100])",
-                "keyword": "WIND_RISK_MITIGATION",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": "0101",
-                    "incident_code": null,
-                    "incident_codes": [
-                      "0101-100"
-                    ],
-                    "key": null,
-                    "value": null
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "recommendation_prose": "The required incident-resolution actions are not yet verifiably completed. No follow-up report/mitigation evidence was provided for the high-severity incident (0011-010) or the 0101 incident (0101-100); wind-risk mitigation evidence tied to the 0101 incident is also missing.",
-      "why_prose": "Both required actions depend on verified follow-up/mitigation for the listed incident codes. The provided attestation claims cover certification (Part 107) and a generic max wind gust capability, but they do not include any incident-specific follow-up reports or mitigation artifacts for 0011-010 and 0101-100.",
-      "why": [
-        "required_actions includes RESOLVE_HIGH_SEVERITY_INCIDENTS",
-        "required_actions includes RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK",
-        "incident_codes includes high-severity prefix 0011 (0011-010)",
-        "no verified follow-up/mitigation claim found for incident 0011-010",
-        "incident_codes includes 0101 prefix (0101-100)",
-        "no verified follow-up/mitigation claim found for incident 0101-100",
-        "no wind-risk mitigation artifact provided/verified for the 0101 incident(s)"
-      ]
+      "unsatisfied_actions": [],
+      "evidence_requirement_spec": null,
+      "recommendation_prose": "",
+      "why_prose": "",
+      "why": []
     },
     "rule_trace": [
-      "STATE_3_RULE_HIGH_SEV_INCIDENT",
-      "STATE_5_RULE_UNRESOLVED_HIGH_SEV"
+      "STATE_3_RULE_INCIDENT_APPROVED_ELSE"
     ]
   }
 }

@@ -475,13 +475,13 @@ async def main():
     Example entry request processing.
     """
     if "good" in sys.argv:
-        entry_request_file = "resources/good_entry_request.json"
+        entry_request_file = "resources/entry-requests/good_entry_request.json"
         test_number = 1
     elif "medium" in sys.argv:
-        entry_request_file = "resources/medium_entry_request.json"
+        entry_request_file = "resources/entry-requests/medium_entry_request.json"
         test_number = 2
     elif "bad" in sys.argv:
-        entry_request_file = "resources/bad_entry_request.json"
+        entry_request_file = "resources/entry-requests/bad_entry_request.json"
         test_number = 3
     else:
         raise ValueError("Invalid entry request file")

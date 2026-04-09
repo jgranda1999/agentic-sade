@@ -239,133 +239,6 @@ class ClaimsAgentOutput(BaseModel):
 # environment_agent -> EnvironmentAgentOutput, reputation_agent -> ReputationAgentOutput,
 # claims_agent -> wrapper with called + ClaimsAgentOutput (when called).
 
-class EntryRequestUAV(BaseModel):
-    drone_id: str
-    model_id: str
-    owner_id: str
-
-
-class EntryRequestUAVModel(BaseModel):
-    model_id: str
-    name: str
-    max_wind_tolerance: float  # knots
-    max_temp_f: float
-    min_temp_f: float
-    max_payload_cap_kg: float
-
-
-class EntryRequestPilot(BaseModel):
-    pilot_id: str
-    organization_id: str
-
-
-class EntryRequestZone(BaseModel):
-    sade_zone_id: str
-    name: str
-
-
-class WeatherForecast(BaseModel):
-    sade_zone_id: str
-    window_start: str
-    window_end: str
-    max_wind_knots: float
-    max_gust_knots: float
-    min_temp_f: float
-    max_temp_f: float
-    precipitation_summary: str
-    visibility_min_nm: float
-    source: str
-    confidence: float
-    generated_at: str
-
-
-class AttestationClaim(BaseModel):
-    requirement_id: str
-    category: str
-    expr: str
-    keyword: str
-    status: str
-    params: List[Union[str, Dict[str, str]]] = Field(default_factory=list)
-    applicable_scopes: List[Literal["PILOT", "UAV"]] = Field(default_factory=list)
-    meta: Dict[str, Any] = Field(default_factory=dict)
-    issued_at: Optional[str] = None
-    expires_at: Optional[str] = None
-    evidence_ref: Optional[str] = None
-    signature_ref: Optional[str] = None
-
-
-class ReputationTelemetry(BaseModel):
-    altitude_min_m: float
-    altitude_max_m: float
-    battery_start_pct: float
-    battery_end_pct: float
-    battery_voltage_start_v: float
-    battery_voltage_end_v: float
-
-
-class ReputationFlight(BaseModel):
-    max_alt_asl_m: float
-    distance_flown_mi: float
-
-
-class ReputationPayload(BaseModel):
-    total_weight_kg: float
-    camera: str
-    other: str
-
-
-class ReputationBatteryVoltage(BaseModel):
-    A: float
-    B: float
-
-
-class ReputationBattery(BaseModel):
-    voltage_in: ReputationBatteryVoltage
-    voltage_out: ReputationBatteryVoltage
-    recharge_in_zone: bool
-    types: str
-
-
-class ReputationRecord(BaseModel):
-    evaluation_id: str
-    evaluation_series_id: str
-    reputation_record_id: str
-    applicable_scopes: List[Literal["PILOT", "UAV"]] = Field(default_factory=list)
-    pilot_id: str
-    drone_id: str
-    telemetry: ReputationTelemetry
-    weather_observed: WeatherForecast
-    zone: EntryRequestZone
-    time_in: str
-    time_out: str
-    flight: ReputationFlight
-    payload: ReputationPayload
-    battery: ReputationBattery
-    number_of_recharges: int
-    incidents: List[str] = Field(default_factory=list)
-    entry_decision: str
-
-
-class EntryRequestVisibility(BaseModel):
-    """Visibility copy of the nested entry request shape."""
-    evaluation_id: str
-    evaluation_series_id: str
-    submitted_at: str
-    entry_request_kind: str
-    request_time: str
-    requested_entry_time: str
-    requested_exit_time: str
-    payload: str
-    uav: EntryRequestUAV
-    uav_model: EntryRequestUAVModel
-    pilot: EntryRequestPilot
-    zone: EntryRequestZone
-    attestation_claims: List[AttestationClaim] = Field(default_factory=list)
-    reputation_records: List[ReputationRecord] = Field(default_factory=list)
-    weather_forecast: WeatherForecast
-    test_overrides: Dict[str, Any] = Field(default_factory=dict)
-    entry_request_history: List[Dict[str, Any]] = Field(default_factory=list)
-
 
 class ClaimsAgentVisibility(BaseModel):
     """Claims agent in visibility: called flag + full ClaimsAgentOutput when called."""
@@ -382,8 +255,7 @@ class ClaimsAgentVisibility(BaseModel):
 
 
 class Visibility(BaseModel):
-    """Full visibility: entry_request copy + full sub-agent output contracts."""
-    entry_request: EntryRequestVisibility
+    """Visibility payload returned by orchestrator."""
     environment_agent: EnvironmentAgentOutput
     reputation_agent: ReputationAgentOutput
     claims_agent: ClaimsAgentVisibility
