@@ -39,27 +39,5 @@
     "expires_at": null,
     "evidence_ref": "attestation:ATT-4",
     "signature_ref": null
-  },
-  {
-    "requirement_id": "req-mitigation-0011-010",
-    "category": "CAPABILITY",
-    "expr": "MITIGATION_EVIDENCE(incident_code=0011-010)",
-    "keyword": "MITIGATION_EVIDENCE",
-    "status": "SATISFIED",
-    "params": [
-      {
-        "prefix": "0011",
-        "incident_code": "0011-010"
-      }
-    ],
-    "applicable_scopes": ["PILOT", "UAV"],
-    "meta": {
-      "incident_code": "0011-010",
-      "status": "SATISFIED"
-    },
-    "issued_at": "2026-03-27T14:00:00Z",
-    "expires_at": null,
-    "evidence_ref": "attestation:ATT-5",
-    "signature_ref": null
   }
 ]

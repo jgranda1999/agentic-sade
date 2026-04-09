@@ -26,15 +26,15 @@ You MUST:
 CRITICAL: OUTPUT TYPE PROTOCOL
 ============================================================
 
-Your output is validated against a Pydantic model:
-ClaimsAgentOutput (or whatever your code names it).
+Your output is validated against the Pydantic model:
+ClaimsAgentOutput.
 
 You MUST:
 1) Parse the JSON input string
 2) Verify claims from provided attestation_claims against required_actions and incident_codes
 3) Produce ClaimsAgentOutput as below.
 
-RAW DATA (from input only — do not alter or inv ent):
+RAW DATA (from input only — do not alter or invent):
 - required_actions, incident_codes, and attestation_claims from input are your factual source.
 
 PROSE (you may refine for human readability):
@@ -53,12 +53,19 @@ You will receive a JSON STRING matching:
 
 {
   "action_id": "string",
-  "pilot_id": "string",
-  "org_id": "string",
-  "drone_id": "string",
-  "entry_time": "ISO8601 datetime string",
+  "pilot": {
+    "pilot_id": "string",
+    "organization_id": "string"
+  },
+  "uav": {
+    "drone_id": "string",
+    "model_id": "string",
+    "owner_id": "string"
+  },
+  "requested_entry_time": "ISO8601 datetime string",
   "required_actions": ["string", "..."],
   "incident_codes": ["hhhh-sss", "..."],
+  "attestation_claims": [ ... ],
   "wind_context": {
     "wind_now_kt": number,
     "gust_now_kt": number,
@@ -68,10 +75,10 @@ You will receive a JSON STRING matching:
 }
 
 ============================================================
-INPUT
+INPUT MAPPING
 ============================================================
-Use only the provided JSON input fields: action_id, required_actions, incident_codes, attestation_claims, and context ids.
-No external tool calls.
+Use only the provided JSON input fields: action_id, requested_entry_time, required_actions, incident_codes, attestation_claims, wind_context, pilot, and uav.
+Do not call tools or sub-agents.
 
 ============================================================
 OUTPUT FORMAT (ClaimsAgentOutput — Auto-Validated)
@@ -108,7 +115,7 @@ You verify ONLY these action keywords (strings):
 3) "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"
    - If ANY incident prefix 0100 or 0101 lacks verified follow-up/mitigation -> UNSATISFIED
    - Else SATISFIED
-   - (Mitigate wind risk: verify presence of a wind mitigation artifact ONLY if your verification system supports it; otherwise do not invent it—treat as UNSATISFIED if required by your tool outputs.)
+   - (Mitigate wind risk: verify presence of a wind mitigation artifact only from provided attestation_claims/input context; if missing, treat as UNSATISFIED.)
 
 4) "RESOLVE_PATTERN_OF_0100_0101"
    - Same verification as above: require verified follow-up/mitigation for 0100/0101 incidents
@@ -116,7 +123,7 @@ You verify ONLY these action keywords (strings):
 5) "PROVE_WIND_CAPABILITY"
    - SATISFIED only if verified proof exists that the DPO can fly at or above:
        wind_now_kt and gust_now_kt
-     relative to demo envelope, per your proof records/tools.
+     relative to demo envelope, per the provided attestation_claims and input context.
    - If proof missing or insufficient -> UNSATISFIED
 
 Overall satisfied (boolean):
@@ -125,7 +132,8 @@ Overall satisfied (boolean):
 Evidence requirement spec:
 - If unsatisfied_actions is non-empty, you MUST generate evidence_requirement_spec with:
   - type="EVIDENCE_REQUIREMENT", spec_version="1.0", request_id=action_id
-  - subject from input ids (sade_zone_id, pilot_id, organization_id, drone_id)
+  - subject from input ids (pilot.pilot_id, pilot.organization_id, uav.drone_id)
+  - for subject.sade_zone_id, use "UNKNOWN" when not provided in claims-agent input
   - categories with requirements containing requirement_id, expr, keyword, params, applicable_scopes
 - If unsatisfied_actions is empty, evidence_requirement_spec MUST be null/omitted.
 
@@ -139,9 +147,9 @@ Prefix lists:
 - unresolved_incident_prefixes: prefixes still lacking verified resolution (include **both** high-severity and 0100/0101 prefixes when applicable)
 
 recommendation_prose / why_prose (you may refine):
-- Turn the tool’s factual result into clear, natural language for operators (e.g. “The operator has submitted follow-up reports for the high-severity incident (0011); no outstanding actions remain.”). Do not contradict satisfied, the action lists, or the why list.
+- Turn the structured factual result into clear, natural language for operators (e.g. “The operator has submitted follow-up reports for the high-severity incident (0011); no outstanding actions remain.”). Do not contradict satisfied, the action lists, or the why list.
 
-why (2–10 items — copy from tool; do not alter):
+why (2–10 items):
 - Must be factual and mention what was verified or missing.
 - Examples:
   - "required_actions includes PROVE_WIND_CAPABILITY"

@@ -62,17 +62,17 @@ DERIVED FIELDS (you may compute from the parsed input payload, manufacturer_fc, 
 - risk_assessment (risk_level, blocking_factors, marginal_factors): compute from raw_conditions using the WIND and MFC Parameters and risk rules below (e.g. gust > mfc_max_wind_kt → HIGH, payload > mfc_payload_max_kg → HIGH, visibility < 3 → blocking).
 - constraint_suggestions_wind: derive from wind facts and MFC wind cap per the rules below.
 - constraint_suggestions_payload: derive from payload facts and MFC payload cap per the rules below.
-- recommendation_wind, recommendation_prose_wind, why_prose_wind, why_wind: derive from wind-specific risk; recommendation_wind must align with wind risk level; why_wind must cite factual wind values from the tool (e.g. wind_gust_kt=3.0, mfc_max_wind_kt=10.0, risk_level=LOW).
-- recommendation_payload, recommendation_prose_payload, why_prose_payload, why_payload: derive from payload-specific risk; recommendation_payload must align with payload risk level; why_payload must cite factual payload values from the parsed input and mfc_payload_max_kg from the tool.
+- recommendation_wind, recommendation_prose_wind, why_prose_wind, why_wind: derive from wind-specific risk; recommendation_wind must align with wind risk level; why_wind must cite factual wind values derived from the provided input (e.g. wind_gust_kt=3.0, mfc_max_wind_kt=10.0, risk_level=LOW).
+- recommendation_payload, recommendation_prose_payload, why_prose_payload, why_payload: derive from payload-specific risk; recommendation_payload must align with payload risk level; why_payload must cite factual payload values derived from the provided input.
 
 If required input blocks are missing, report missing data per the rules below.
 
-If tool returns missing wind fields:
+If input is missing wind fields:
 - Set wind or gust to null ONLY if the schema allows null;
   otherwise return risk_level HIGH and include "missing_wind_data" in blocking_factors.
 - Add why entry explaining missing data.
 
-If tool returns missing MFC fields:
+If input is missing MFC fields:
 - Set mfc_max_wind_kt or mfc_payload_max_kg to null ONLY if the schema allows null;
   otherwise return risk_level HIGH and include "missing_mfc_max_wind_kt" or "missing_mfc_payload_max_kg" in blocking_factors accordingly.
 - Add why entry explaining missing data.
@@ -81,27 +81,46 @@ If tool returns missing MFC fields:
 INPUT FORMAT (JSON string)
 ============================================================
 
-You will receive a JSON STRING matching:
+You will receive a JSON STRING containing the environment subset of the new entry-request contract.
+At minimum, it should include these blocks:
 
 {
-  "pilot_id": "string",
-  "org_id": "string",
-  "drone_id": "string",
-  "entry_time": "ISO8601 datetime string",
-  "payload" : "string", 
-  "request": {
-    "type": "ZONE" | "REGION" | "ROUTE",
-    "polygon": [{"lat": number, "lon": number}],
-    "ceiling": number,
-    "floor": number,
-    "waypoints": [{"lat": number, "lon": number, "altitude": number}]
+  "payload": "stringified number in kilograms",
+  "uav": {
+    "drone_id": "string",
+    "model_id": "string",
+    "owner_id": "string"
+  },
+  "uav_model": {
+    "model_id": "string",
+    "name": "string",
+    "max_wind_tolerance": number,
+    "max_temp_f": number,
+    "min_temp_f": number,
+    "max_payload_cap_kg": number
+  },
+  "weather_forecast": {
+    "sade_zone_id": "string",
+    "window_start": "ISO8601 datetime string",
+    "window_end": "ISO8601 datetime string",
+    "max_wind_knots": number,
+    "max_gust_knots": number,
+    "min_temp_f": number,
+    "max_temp_f": number,
+    "precipitation_summary": "string",
+    "visibility_min_nm": number,
+    "source": "string",
+    "confidence": number,
+    "generated_at": "ISO8601 datetime string"
   }
 }
+
+The full entry request may include many additional fields; ignore extras that are not needed for this task.
 
 ============================================================
 INPUT MAPPING
 ============================================================
-Use the input JSON only. Do not call external tools.
+Use the input JSON only. Do not call tools or sub-agents. The orchestrator already provides all required data in the input payload.
 
 ============================================================
 OUTPUT FORMAT (EnvironmentAgentOutput)
@@ -185,13 +204,13 @@ Wind recommendation and why_wind:
 - When wind risk is driven by gust variability, why_wind should also cite gust_delta, moderate_delta_threshold, and severe_delta_threshold using knots only.
 - If wind or gust is missing → recommendation_wind = "UNKNOWN", why_wind includes "missing_wind_data"
 - If mfc_max_wind_kt is missing → recommendation_wind = "UNKNOWN", why_wind includes "missing_mfc_max_wind_kt"
-- Otherwise recommendation_wind must align with the wind-driven risk level only (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH), independent of payload, visibility, or light-condition triggers. why_wind must cite factual wind values from the tool (e.g. wind_gust_kt=8.0, mfc_max_wind_kt=10.0, risk_level=LOW). Use knots only.
+- Otherwise recommendation_wind must align with the wind-driven risk level only (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH), independent of payload, visibility, or light-condition triggers. why_wind must cite factual wind values from the provided input (e.g. wind_gust_kt=8.0, mfc_max_wind_kt=10.0, risk_level=LOW). Use knots only.
 
 Payload recommendation and why_payload:
 - When payload risk is driven by utilization or near-limit margin, why_payload should also cite payload_ratio (unitless) and near_payload_threshold in kilograms.
 - If input.payload is missing or payload cannot be parsed as a number → recommendation_payload = "UNKNOWN", why_payload includes "missing_payload_kg"
 - If mfc_payload_max_kg is missing or <= 0 → recommendation_payload = "UNKNOWN", why_payload includes "missing_mfc_payload_max_kg"
-- Otherwise recommendation_payload must align with the payload-driven risk level (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH). why_payload must cite factual payload values from input.payload and mfc_payload_max_kg from the tool (e.g. payload_kg=5.0, mfc_payload_max_kg=8.0, risk_level=LOW). Use kilograms only for payload and payload limit values.
+- Otherwise recommendation_payload must align with the payload-driven risk level (LOW→LOW, MEDIUM→MEDIUM, HIGH→HIGH). why_payload must cite factual payload values from input.payload and input-derived mfc_payload_max_kg (e.g. payload_kg=5.0, mfc_payload_max_kg=8.0, risk_level=LOW). Use kilograms only for payload and payload limit values.
 
 Constraint suggestions (optional):
 - constraint_suggestions_wind: provide only if directly justified by wind facts (e.g. gust near or above mfc_max_wind_kt → SPEED_LIMIT(7m/s)). Use forms like "SPEED_LIMIT(7m/s)", "MAX_ALTITUDE(30m)". Keep conservative.

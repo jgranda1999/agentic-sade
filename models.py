@@ -1,8 +1,13 @@
 """
 Pydantic models for SADE agent outputs.
 
-These models define the structured output types for all agents,
-ensuring type safety and automatic validation.
+This file intentionally groups models in three layers:
+1) Sub-agent input contracts (what orchestrator sends to each sub-agent)
+2) Sub-agent output contracts (what each sub-agent returns)
+3) Orchestrator output contract (final decision + visibility payload)
+
+Keeping these contracts explicit in one place helps prompt text, tool descriptions,
+and runtime validation stay aligned as schemas evolve.
 """
 
 from typing import List, Optional, Dict, Any, Literal, Union
@@ -11,6 +16,89 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # ============================================================================
 # Environment Agent Models
+# ============================================================================
+# NOTE: Env input is intentionally minimal to avoid passing full entry requests.
+class EnvInputUAV(BaseModel):
+    """UAV identity block from entry request."""
+    drone_id: str
+    model_id: str
+    owner_id: str
+
+
+class EnvInputUAVModel(BaseModel):
+    """UAV model capability block from entry request."""
+    model_id: str
+    name: str
+    max_wind_tolerance: float
+    max_temp_f: float
+    min_temp_f: float
+    max_payload_cap_kg: float
+
+
+class EnvInputWeatherForecast(BaseModel):
+    """Weather forecast block from entry request."""
+    sade_zone_id: str
+    window_start: str = Field(..., description="ISO8601 datetime string")
+    window_end: str = Field(..., description="ISO8601 datetime string")
+    max_wind_knots: float
+    max_gust_knots: float
+    min_temp_f: float
+    max_temp_f: float
+    precipitation_summary: str
+    visibility_min_nm: float
+    source: str
+    confidence: float
+    generated_at: str = Field(..., description="ISO8601 datetime string")
+
+
+class EnvironmentAgentInput(BaseModel):
+    """Minimal input contract passed from orchestrator to environment agent."""
+    payload: str = Field(..., description="Stringified payload mass in kilograms.")
+    uav: EnvInputUAV
+    uav_model: EnvInputUAVModel
+    weather_forecast: EnvInputWeatherForecast
+
+
+# ============================================================================
+# Reputation Agent Input Models
+# ============================================================================
+# NOTE: Reputation input is intentionally narrowed to historical records only.
+class ReputationAgentInput(BaseModel):
+    """Minimal input contract passed from orchestrator to reputation agent."""
+    reputation_records: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# ============================================================================
+# Claims Agent Input Models
+# ============================================================================
+class ClaimsInputPilot(BaseModel):
+    """Pilot identity block passed to claims agent."""
+    pilot_id: str
+    organization_id: str
+
+
+class ClaimsInputWindContext(BaseModel):
+    """Wind context passed from orchestrator state to claims agent."""
+    wind_now_kt: float
+    gust_now_kt: float
+    demo_steady_max_kt: float
+    demo_gust_max_kt: float
+
+
+class ClaimsAgentInput(BaseModel):
+    """Minimal input contract passed from orchestrator to claims agent."""
+    action_id: str
+    requested_entry_time: str = Field(..., description="ISO8601 datetime string")
+    pilot: ClaimsInputPilot
+    uav: EnvInputUAV
+    required_actions: List[str] = Field(default_factory=list)
+    incident_codes: List[str] = Field(default_factory=list)
+    wind_context: ClaimsInputWindContext
+    attestation_claims: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# ============================================================================
+# Environment Agent Output Models
 # ============================================================================
 class ManufacturerFC(BaseModel):
     """Manufacturer flight constraints."""
@@ -45,7 +133,7 @@ class RiskAssessment(BaseModel):
 
 
 class EnvironmentAgentOutput(BaseModel):
-    """Output from Environment Agent (v2: includes recommendation, why for orchestrator)."""
+    """Output from Environment Agent (risk signals + evidence fields for orchestrator)."""
     manufacturer_fc: ManufacturerFC
     raw_conditions: RawConditions
     risk_assessment: RiskAssessment
@@ -64,6 +152,7 @@ class EnvironmentAgentOutput(BaseModel):
 # ============================================================================
 # Reputation Agent Models
 # ============================================================================
+# NOTE: These are outputs consumed by orchestrator state machine rules.
 
 class Incident(BaseModel):
     """Incident record."""
@@ -92,7 +181,7 @@ class ReputationRiskAssessment(BaseModel):
 
 
 class ReputationAgentOutput(BaseModel):
-    """Output from Reputation Agent (orchestration fields; no reputation_summary to avoid bias)."""
+    """Output from Reputation Agent (deterministic historical risk signals)."""
     incident_analysis: IncidentAnalysis
     risk_assessment: ReputationRiskAssessment
     drp_sessions_count: int = 0
@@ -109,6 +198,8 @@ class ReputationAgentOutput(BaseModel):
 # ============================================================================
 # Action Required Agent Models (Evidence/Attestation)
 # ============================================================================
+# NOTE: Kept for shared schema compatibility even if action-required flow is
+# currently handled through claims/evidence requirement contracts.
 
 class EvidenceSubject(BaseModel):
     """Subject of evidence requirement/attestation."""
@@ -235,9 +326,8 @@ class ClaimsAgentOutput(BaseModel):
 # ============================================================================
 # Orchestrator Output (decision + visibility contract)
 # ============================================================================
-# Visibility uses the same Pydantic contracts as sub-agent outputs:
-# environment_agent -> EnvironmentAgentOutput, reputation_agent -> ReputationAgentOutput,
-# claims_agent -> wrapper with called + ClaimsAgentOutput (when called).
+# Visibility embeds full sub-agent outputs so downstream systems can audit
+# exactly which evidence/signals were used for the final decision.
 
 
 class ClaimsAgentVisibility(BaseModel):

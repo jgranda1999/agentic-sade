@@ -2,26 +2,26 @@
 FINAL DECISION
 ======================================================================
 Type: ACTION-REQUIRED
-SADE Message: act-86af5d19-57ad-4aaa-9238-5d3a97937a29,ACTION-REQUIRED,(RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)
-Explanation: Action required: Although the Environment Agent indicates forecast winds are within DJI Mavic 3 MFC limits (wind 9.0 kt, gust 11.0 kt vs mfc_max_wind_kt 12.2) and payload is within MFC (1.6 kg vs 2.268 kg), the Reputation Agent reports an unresolved medium-severity incident code 0101-100 (n_0100_0101=1). The Claims Agent did not find verified follow-up/mitigation evidence for incident 0101-100 and requires the attached evidence requirement spec to resolve the 0100/0101 incident and associated wind-risk mitigation.
+SADE Message: ACT-b80eac98e26b49889179c4e84fc4530f-001,ACTION-REQUIRED,(RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)
+Explanation: Action required: The Environment Agent shows wind 9.0 kt and gust 11.0 kt under the MFC max wind 12.2 kt, and payload 1.6 kg under MFC payload max 2.268 kg. The Reputation Agent shows unresolved incidents including 0011-010 (high severity) and 0101-100 (medium). Claims Agent verified the high-severity follow-up for 0011-010, but did not find verified follow-up and wind-risk mitigation artifacts for incident 0101-100; therefore RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK remains unsatisfied and must be completed per the attached evidence requirement spec.
 ======================================================================
 
 Full output (decision + visibility):
 {
   "decision": {
     "type": "ACTION-REQUIRED",
-    "sade_message": "act-86af5d19-57ad-4aaa-9238-5d3a97937a29,ACTION-REQUIRED,(RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)",
+    "sade_message": "ACT-b80eac98e26b49889179c4e84fc4530f-001,ACTION-REQUIRED,(RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK)",
     "constraints": [],
-    "action_id": "act-86af5d19-57ad-4aaa-9238-5d3a97937a29",
+    "action_id": "ACT-b80eac98e26b49889179c4e84fc4530f-001",
     "actions": [
       "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"
     ],
     "evidence_requirement_spec": {
       "type": "EVIDENCE_REQUIREMENT",
       "spec_version": "1.0",
-      "request_id": "act-86af5d19-57ad-4aaa-9238-5d3a97937a29",
+      "request_id": "ACT-b80eac98e26b49889179c4e84fc4530f-001",
       "subject": {
-        "sade_zone_id": "zone-001",
+        "sade_zone_id": "UNKNOWN",
         "pilot_id": "pilot-001",
         "organization_id": "org-001",
         "drone_id": "drone-001"
@@ -47,11 +47,16 @@ Full output (decision + visibility):
                   "value": null
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "category": "ENVIRONMENT",
+          "requirements": [
             {
-              "requirement_id": "req-mitigation-0101-100",
-              "expr": "MITIGATION_EVIDENCE(incident_code=0101-100)",
-              "keyword": "MITIGATION_EVIDENCE",
+              "requirement_id": "req-wind-mitigation-0101-100",
+              "expr": "WIND_RISK_MITIGATION(incident_code=0101-100)",
+              "keyword": "WIND_RISK_MITIGATION",
               "applicable_scopes": [
                 "PILOT",
                 "UAV"
@@ -65,33 +70,13 @@ Full output (decision + visibility):
                   "value": null
                 }
               ]
-            },
-            {
-              "requirement_id": "req-wind-mitigation-artifact",
-              "expr": "WIND_RISK_MITIGATION_ARTIFACT(for_incidents_prefix_in=[0100,0101])",
-              "keyword": "WIND_RISK_MITIGATION_ARTIFACT",
-              "applicable_scopes": [
-                "PILOT",
-                "UAV"
-              ],
-              "params": [
-                {
-                  "prefix": null,
-                  "incident_code": null,
-                  "incident_codes": [
-                    "0101-100"
-                  ],
-                  "key": null,
-                  "value": null
-                }
-              ]
             }
           ]
         }
       ]
     },
     "denial_code": null,
-    "explanation": "Action required: Although the Environment Agent indicates forecast winds are within DJI Mavic 3 MFC limits (wind 9.0 kt, gust 11.0 kt vs mfc_max_wind_kt 12.2) and payload is within MFC (1.6 kg vs 2.268 kg), the Reputation Agent reports an unresolved medium-severity incident code 0101-100 (n_0100_0101=1). The Claims Agent did not find verified follow-up/mitigation evidence for incident 0101-100 and requires the attached evidence requirement spec to resolve the 0100/0101 incident and associated wind-risk mitigation."
+    "explanation": "Action required: The Environment Agent shows wind 9.0 kt and gust 11.0 kt under the MFC max wind 12.2 kt, and payload 1.6 kg under MFC payload max 2.268 kg. The Reputation Agent shows unresolved incidents including 0011-010 (high severity) and 0101-100 (medium). Claims Agent verified the high-severity follow-up for 0011-010, but did not find verified follow-up and wind-risk mitigation artifacts for incident 0101-100; therefore RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK remains unsatisfied and must be completed per the attached evidence requirement spec."
   },
   "visibility": {
     "environment_agent": {
@@ -115,32 +100,36 @@ Full output (decision + visibility):
         }
       },
       "risk_assessment": {
-        "risk_level": "LOW",
+        "risk_level": "MEDIUM",
         "blocking_factors": [],
-        "marginal_factors": []
+        "marginal_factors": [
+          "near_mfc_max_wind_limit",
+          "elevated_wind_gusts"
+        ]
       },
-      "constraint_suggestions_wind": [],
+      "constraint_suggestions_wind": [
+        "MAX_ALTITUDE(30m)"
+      ],
       "constraint_suggestions_payload": [],
-      "recommendation_wind": "LOW",
+      "recommendation_wind": "MEDIUM",
       "recommendation_payload": "LOW",
-      "recommendation_prose_wind": "",
-      "recommendation_prose_payload": "",
-      "why_prose_wind": "Winds (steady and gusts) are below the manufacturer max-wind tolerance.",
-      "why_prose_payload": "Payload is below the manufacturer maximum payload capacity.",
+      "recommendation_prose_wind": "Wind gusts are elevated and close to the UAV model max wind tolerance; consider additional operational constraints.",
+      "recommendation_prose_payload": "Payload is within the UAV model maximum payload capacity.",
+      "why_prose_wind": "Max gust 11.0 kt is close to MFC max wind 12.2 kt (within 3 kt) and is >= 85% of the limit.",
+      "why_prose_payload": "Planned payload 1.6 kg is below the MFC payload max 2.268 kg.",
       "why_wind": [
         "wind_kt=9.0",
         "wind_gust_kt=11.0",
         "mfc_max_wind_kt=12.2",
-        "gust_delta_kt=2.0",
-        "moderate_delta_threshold_kt=3.0 (max(3.0, 0.15*12.2))",
-        "severe_delta_threshold_kt=6.0 (max(6.0, 0.30*12.2))",
-        "wind_risk_level=LOW"
+        "max_wind_minus_gust_kt=1.1999999999999993 (<=3.0 kt) => near_mfc_max_wind_limit",
+        "gust_fraction_of_mfc=0.9016393442622952 (>=0.85 and <=1.0) => elevated_wind_gusts",
+        "wind_risk_level=MEDIUM"
       ],
       "why_payload": [
         "payload_kg=1.6",
         "mfc_payload_max_kg=2.268",
-        "payload_ratio=0.706 (payload/mfc_payload_max_kg)",
-        "near_payload_threshold_kg=0.5 (max(0.5, 0.10*2.268))",
+        "payload_ratio=0.7054673721340388",
+        "near_payload_threshold_kg=0.5",
         "payload_risk_level=LOW"
       ]
     },
@@ -153,7 +142,7 @@ Full output (decision + visibility):
             "incident_subcategory": "100",
             "severity": "MEDIUM",
             "resolved": false,
-            "session_id": "c30a2c10-b234-4b8b-8057-1d2062745e22",
+            "session_id": "rep-003",
             "date": "2025-01-12T18:00:00Z"
           },
           {
@@ -161,8 +150,8 @@ Full output (decision + visibility):
             "incident_category": "0011",
             "incident_subcategory": "010",
             "severity": "HIGH",
-            "resolved": true,
-            "session_id": "e73189cd-6d18-4144-bce1-efbc22962722",
+            "resolved": false,
+            "session_id": "rep-005",
             "date": "2025-03-14T11:00:00Z"
           }
         ],
@@ -171,9 +160,9 @@ Full output (decision + visibility):
         "recent_incidents_count": 0
       },
       "risk_assessment": {
-        "risk_level": "MEDIUM",
+        "risk_level": "HIGH",
         "blocking_factors": [
-          "unresolved_incidents_present"
+          "unresolved_high_severity_incident"
         ],
         "confidence_factors": [
           "no_recent_incidents"
@@ -187,36 +176,41 @@ Full output (decision + visibility):
         "0011-010"
       ],
       "n_0100_0101": 1,
-      "recommendation_prose": "Historical risk signal: MEDIUM. Records include unresolved incident(s) (none high-severity unresolved) and no incidents within the last 30 days based on record timestamps.",
-      "recommendation": "MEDIUM",
-      "why_prose": "Derived from 5 historical sessions: max demonstrated steady wind 12 kt and gust 15 kt; 2 total incidents with unresolved_incidents_present=true; recent_incidents_count=0; n_0100_0101=1 (0101/0100-type incidents).",
+      "recommendation_prose": "Historical risk signal: HIGH based on an unresolved HIGH-severity incident in prior sessions.",
+      "recommendation": "HIGH",
+      "why_prose": "Derived from 5 prior sessions with demonstrated winds up to 12.0 kt steady / 15.0 kt gust, and 2 total incidents including 1 unresolved HIGH-severity (0011-010). No incidents occurred within the last 30 days of the analysis date.",
       "why": [
         "drp_sessions_count=5",
-        "demo_steady_max_kt=12",
-        "demo_gust_max_kt=15",
+        "demo_steady_max_kt=12.0",
+        "demo_gust_max_kt=15.0",
         "total_incidents=2",
         "unresolved_incidents_present=true",
-        "recent_incidents_count=0",
+        "unresolved_high_severity_incident_present=true (0011-010)",
+        "recent_incidents_count=0 (last 30 days)",
         "n_0100_0101=1"
       ]
     },
     "claims_agent": {
       "called": true,
       "satisfied": false,
-      "resolved_incident_prefixes": [],
+      "resolved_incident_prefixes": [
+        "0011"
+      ],
       "unresolved_incident_prefixes": [
         "0101"
       ],
-      "satisfied_actions": [],
+      "satisfied_actions": [
+        "RESOLVE_HIGH_SEVERITY_INCIDENTS"
+      ],
       "unsatisfied_actions": [
         "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK"
       ],
       "evidence_requirement_spec": {
         "type": "EVIDENCE_REQUIREMENT",
         "spec_version": "1.0",
-        "request_id": "act-86af5d19-57ad-4aaa-9238-5d3a97937a29",
+        "request_id": "ACT-b80eac98e26b49889179c4e84fc4530f-001",
         "subject": {
-          "sade_zone_id": "zone-001",
+          "sade_zone_id": "UNKNOWN",
           "pilot_id": "pilot-001",
           "organization_id": "org-001",
           "drone_id": "drone-001"
@@ -242,11 +236,16 @@ Full output (decision + visibility):
                     "value": null
                   }
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "category": "ENVIRONMENT",
+            "requirements": [
               {
-                "requirement_id": "req-mitigation-0101-100",
-                "expr": "MITIGATION_EVIDENCE(incident_code=0101-100)",
-                "keyword": "MITIGATION_EVIDENCE",
+                "requirement_id": "req-wind-mitigation-0101-100",
+                "expr": "WIND_RISK_MITIGATION(incident_code=0101-100)",
+                "keyword": "WIND_RISK_MITIGATION",
                 "applicable_scopes": [
                   "PILOT",
                   "UAV"
@@ -260,45 +259,24 @@ Full output (decision + visibility):
                     "value": null
                   }
                 ]
-              },
-              {
-                "requirement_id": "req-wind-mitigation-artifact",
-                "expr": "WIND_RISK_MITIGATION_ARTIFACT(for_incidents_prefix_in=[0100,0101])",
-                "keyword": "WIND_RISK_MITIGATION_ARTIFACT",
-                "applicable_scopes": [
-                  "PILOT",
-                  "UAV"
-                ],
-                "params": [
-                  {
-                    "prefix": null,
-                    "incident_code": null,
-                    "incident_codes": [
-                      "0101-100"
-                    ],
-                    "key": null,
-                    "value": null
-                  }
-                ]
               }
             ]
           }
         ]
       },
-      "recommendation_prose": "The required action to resolve 0100/0101 incidents and mitigate wind risk is not yet verified because the 0101-100 incident lacks a verified follow-up report and mitigation evidence, and no explicit wind-risk mitigation artifact tied to the 0100/0101 incidents was provided.",
-      "why_prose": "RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK requires verified follow-up/mitigation for any 0100/0101 incident codes present. The only verified incident artifacts provided are for 0011-010 (a different prefix), so 0101-100 remains unverified.",
+      "recommendation_prose": "High-severity incident follow-up is verified for 0011-010, satisfying the high-severity resolution requirement. The 0101 incident (0101-100) still lacks verified follow-up/mitigation artifacts required to resolve 0100/0101 incidents and mitigate wind risk.",
+      "why_prose": "RESOLVE_HIGH_SEVERITY_INCIDENTS is satisfied because a verified FOLLOWUP_REPORT exists for incident 0011-010. RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK remains unsatisfied because there is no provided, verified follow-up report or wind-risk mitigation artifact for incident 0101-100.",
       "why": [
-        "required_actions includes RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK",
-        "incident_codes includes 0101-100 (prefix 0101) and 0011-010 (prefix 0011)",
-        "no FOLLOWUP_REPORT attestation found for incident 0101-100",
-        "no MITIGATION_EVIDENCE attestation found for incident 0101-100",
-        "wind-risk mitigation for 0100/0101 incidents is not explicitly evidenced in provided attestation_claims",
-        "FOLLOWUP_REPORT and MITIGATION_EVIDENCE attestations exist for incident 0011-010 but do not satisfy the required 0100/0101 resolution action"
+        "required_actions includes RESOLVE_HIGH_SEVERITY_INCIDENTS and RESOLVE_0100_0101_INCIDENTS_AND_MITIGATE_WIND_RISK",
+        "incident_codes include high-severity prefix 0011 (0011-010) and medium prefix 0101 (0101-100)",
+        "verified FOLLOWUP_REPORT found for incident 0011-010 (attestation:ATT-4)",
+        "no verified FOLLOWUP_REPORT found for incident 0101-100 in attestation_claims",
+        "no verified wind-risk mitigation artifact provided for incident 0101-100; MAX_WIND_GUST attestation alone does not evidence incident mitigation"
       ]
     },
     "rule_trace": [
-      "STATE_3_RULE_0100_0101_NEAR_OR_EXCEEDS_ENVELOPE",
-      "STATE_5_RULE_UNSATISFIED_ACTIONS_ACTION_REQUIRED"
+      "STATE_3_RULE_HIGH_SEV_INCIDENT",
+      "STATE_5_RULE_UNRESOLVED_HIGH_SEV"
     ]
   }
 }

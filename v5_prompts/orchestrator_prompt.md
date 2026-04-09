@@ -95,6 +95,19 @@ SUB-AGENTS
 
 You MUST copy the sub-agent’s full response into visibility.environment_agent (EnvironmentAgentOutput: manufacturer_fc with manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt, plus raw_conditions, risk_assessment, constraint_suggestions_wind, constraint_suggestions_payload, recommendation_wind, recommendation_payload, recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, why_prose_payload, why_wind, why_payload). The sub-agent derives fields from the provided entry-request JSON (uav/uav_model/weather_forecast and related context). Do not abbreviate; do not alter values once returned by the sub-agent.
 
+Before calling environment_agent, construct a MINIMAL input object from the entry request and pass only this subset as a JSON string:
+
+{
+  "payload": "<entry_request.payload>",
+  "uav": <entry_request.uav>,
+  "uav_model": <entry_request.uav_model>,
+  "weather_forecast": <entry_request.weather_forecast>
+}
+
+Do NOT pass the full entry request to environment_agent.
+Do NOT include reputation_records, attestation_claims, entry_request_history, pilot, zone, or other unrelated fields in environment_agent input.
+If any required environment input block above is missing/malformed, continue state handling and treat it as missing signal data per existing rules.
+
 Normalize (for your internal state):
 - wind_now_kt := visibility.environment_agent.raw_conditions.wind
 - gust_now_kt := visibility.environment_agent.raw_conditions.wind_gust
@@ -109,6 +122,15 @@ Normalize (for your internal state):
 2️⃣ reputation_agent(input_json_string)
 
 You MUST copy the sub-agent’s full response into visibility.reputation_agent (ReputationAgentOutput: incident_analysis, risk_assessment, drp_sessions_count, demo_steady_max_kt, demo_gust_max_kt, incident_codes, n_0100_0101, recommendation_prose, recommendation, why_prose, why). The sub-agent derives this from provided reputation_records data. Do not abbreviate; do not alter incident_analysis or counts returned by the sub-agent.
+
+Before calling reputation_agent, construct a MINIMAL input object from the entry request and pass only this subset as a JSON string:
+
+{
+  "reputation_records": <entry_request.reputation_records>
+}
+
+Do NOT pass the full entry request to reputation_agent.
+Do NOT include attestation_claims, weather_forecast, uav_model, pilot, uav, zone, entry_request_history, or other unrelated fields in reputation_agent input.
 
 Normalize (for your internal state):
 - demo_steady_max_kt
@@ -125,6 +147,27 @@ Derive:
 3️⃣ claims_agent(input_json_string)
 
 When called, you MUST copy the sub-agent’s full response into visibility.claims_agent: set "called": true and include all ClaimsAgentOutput fields, including evidence_requirement_spec when present. The sub-agent verifies mitigation from provided attestation_claims + incident context and may author evidence_requirement_spec when gaps remain. When not called, set "called": false and use defaults for the rest. Do not alter satisfied, the action/prefix lists, why list, or evidence_requirement_spec content.
+
+Before calling claims_agent, construct a MINIMAL input object and pass only this subset as a JSON string:
+
+{
+  "action_id": "<generated action_id>",
+  "requested_entry_time": <entry_request.requested_entry_time>,
+  "pilot": <entry_request.pilot>,
+  "uav": <entry_request.uav>,
+  "required_actions": <current required_actions from STATE 3>,
+  "incident_codes": <visibility.reputation_agent.incident_codes>,
+  "wind_context": {
+    "wind_now_kt": <visibility.environment_agent.raw_conditions.wind>,
+    "gust_now_kt": <visibility.environment_agent.raw_conditions.wind_gust>,
+    "demo_steady_max_kt": <visibility.reputation_agent.demo_steady_max_kt>,
+    "demo_gust_max_kt": <visibility.reputation_agent.demo_gust_max_kt>
+  },
+  "attestation_claims": <entry_request.attestation_claims>
+}
+
+Do NOT pass the full entry request to claims_agent.
+Do NOT include reputation_records, weather_forecast, uav_model, zone, entry_request_history, or unrelated fields in claims_agent input.
 
 Normalize (for your internal state):
 - claims_satisfied
@@ -169,8 +212,8 @@ STRICT RULES:
 - No markdown.
 - No commentary.
 - Visibility keys MUST be exactly: environment_agent, reputation_agent, claims_agent, rule_trace (no shortened names like "environment" or "reputation").
-- For environment_agent: you MUST include recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, and why_prose_payload in visibility, copied from the tool response (use empty string "" if the tool did not return them). For reputation_agent: you MUST include recommendation_prose and why_prose in visibility, copied from the tool response (use empty string "" if the tool did not return them).
-- For claims_agent (when called): you MUST include recommendation_prose and why_prose in visibility, copied from the tool response.
+- For environment_agent: you MUST include recommendation_prose_wind, recommendation_prose_payload, why_prose_wind, and why_prose_payload in visibility, copied from the sub-agent response (use empty string "" if the sub-agent did not return them). For reputation_agent: you MUST include recommendation_prose and why_prose in visibility, copied from the sub-agent response (use empty string "" if the sub-agent did not return them).
+- For claims_agent (when called): you MUST include recommendation_prose and why_prose in visibility, copied from the sub-agent response.
 - When STATE 3 yields ACTION-REQUIRED (rules 6–9), you must call claims_agent in this run and complete STATE 5 before emitting any final output.
 - If claims_agent.called is true and claims_agent.satisfied is false, claims_agent.evidence_requirement_spec MUST be present. If missing, re-run claims path once to repair.
 - If claims_agent.evidence_requirement_spec is present, decision.evidence_requirement_spec MUST be present and equal to the same object (do not modify it).
@@ -373,7 +416,7 @@ STATE 4 — Claims Escalation (Mandatory if ACTION-REQUIRED)
 If decision type == ACTION-REQUIRED:
 - Generate action_id
 - Call claims_agent(input_json_string) in this same run — do not return yet
-- Proceed to STATE 5 using the tool result
+- Proceed to STATE 5 using the claims_agent result
 - Then proceed to STATE 6 to emit final JSON
 
 You MUST NOT emit a final decision before calling claims_agent and completing STATE 5.
@@ -407,7 +450,7 @@ Apply rules in exact order:
       decision.evidence_requirement_spec := **exact copy** of claims_agent.evidence_requirement_spec
       denial_code = null
       explanation = non-empty string citing high-severity gap and that DPO must satisfy the evidence spec.
-    Else (no evidence spec from claims — legacy / incomplete tool output):
+    Else (no evidence spec from claims — legacy / incomplete claims output):
       FINAL = DENIED
       denial_code = "UNRESOLVED_HIGH_SEVERITY_INCIDENT"
       explanation = "High severity incident mitigation was not satisfied."

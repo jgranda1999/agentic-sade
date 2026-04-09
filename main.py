@@ -219,8 +219,9 @@ orchestrator_agent = Agent(
         environment_agent.as_tool(
             tool_name="environment_agent",
             tool_description=(
-                "Analyze environmental and MFC context from the provided nested entry-request JSON. "
-                "Input: JSON string containing entry request fields including payload, uav/uav_model, zone, and weather_forecast."
+                "Analyze environmental and MFC context from the provided minimal environment input. "
+                "Input: JSON string with exactly the EnvironmentAgentInput subset: payload, uav, uav_model, weather_forecast. "
+                "Do not pass the full entry request and do not include unrelated blocks (reputation_records, attestation_claims, entry_request_history, pilot, zone). "
                 "Returns: EnvironmentAgentOutput (manufacturer_fc with manufacturer, model, category, mfc_payload_max_kg, mfc_max_wind_kt; raw_conditions; risk_assessment; constraint_suggestions_wind; constraint_suggestions_payload; recommendation_wind; recommendation_payload; recommendation_prose_wind; recommendation_prose_payload; why_prose_wind; why_prose_payload; why_wind; why_payload)."
             ),
         ),
@@ -228,7 +229,8 @@ orchestrator_agent = Agent(
             tool_name="reputation_agent",
             tool_description=(
                 "Analyze provided historical reputation_records for the current DPO context. "
-                "Input: JSON string containing entry request fields and reputation_records list. "
+                "Input: JSON string with exactly the ReputationAgentInput subset: reputation_records. "
+                "Do not pass the full entry request and do not include unrelated blocks (attestation_claims, weather_forecast, uav_model, pilot, uav, zone, entry_request_history). "
                 "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, orchestration fields."
             ),
         ),
@@ -245,7 +247,8 @@ orchestrator_agent = Agent(
             tool_name="claims_agent",
             tool_description=(
                 "Verify required_actions against provided attestation_claims and incident context. "
-                "Input: JSON string with action_id, subject ids, required_actions, incident_codes, wind_context, and attestation_claims. "
+                "Input: JSON string with exactly the ClaimsAgentInput subset: action_id, requested_entry_time, pilot, uav, required_actions, incident_codes, wind_context, and attestation_claims. "
+                "Do not pass the full entry request and do not include unrelated blocks (reputation_records, weather_forecast, uav_model, zone, entry_request_history). "
                 "Returns: ClaimsAgentOutput with satisfied, resolved/unresolved incident prefixes, satisfied/unsatisfied actions, "
                 "optional evidence_requirement_spec, and why. Call this when STATE 3 yields ACTION-REQUIRED before emitting any final decision."
             ),
