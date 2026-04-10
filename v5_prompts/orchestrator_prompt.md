@@ -113,7 +113,9 @@ Normalize (for your internal state):
 
 You MUST copy the sub-agent’s full response into visibility.reputation_agent (ReputationAgentOutput: incident_analysis, risk_assessment, drp_sessions_count, demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, incident_codes, n_0100_0101, recommendation_prose, recommendation, why_prose, why). The sub-agent derives this from provided reputation_records data. Do not abbreviate; do not alter incident_analysis or counts returned by the sub-agent.
 
-Before calling reputation_agent, construct a MINIMAL input object from the entry request and pass only this subset as a JSON string:
+**FIRST-TIME DPO — empty `reputation_records`:** If `entry_request.reputation_records` is an empty JSON array `[]`, you MUST **NOT** call `reputation_agent`. After `environment_agent` returns, build `visibility.reputation_agent` exactly per **FIRST_TIME_DPO_REPUTATION_PROFILE** in STATE 1 below. (The orchestrator still emits a full `ReputationAgentOutput`; it is synthesized, not from the tool.)
+
+Before calling reputation_agent (only when `reputation_records` has **at least one** element), construct a MINIMAL input object from the entry request and pass only this subset as a JSON string:
 
 {
   "reputation_records": <entry_request.reputation_records>
@@ -180,7 +182,7 @@ OUTPUT CONTRACT (JSON ONLY — STRICT)
 Return exactly ONE JSON object. visibility MUST match models.py (OrchestratorOutput.Visibility):
 
 - visibility.environment_agent: FULL EnvironmentAgentOutput from environment_agent
-- visibility.reputation_agent: FULL ReputationAgentOutput from reputation_agent
+- visibility.reputation_agent: FULL ReputationAgentOutput — from `reputation_agent` when `reputation_records` is non-empty, or from **FIRST_TIME_DPO_REPUTATION_PROFILE** (STATE 1) when empty
 - visibility.claims_agent: called (bool); when called=true include all ClaimsAgentOutput fields (satisfied, resolved_incident_prefixes, unresolved_incident_prefixes, satisfied_actions, unsatisfied_actions, evidence_requirement_spec, recommendation_prose, why_prose, why)
 - visibility.rule_trace: ["string"]
 
@@ -233,7 +235,7 @@ STRICT RULES:
 - If type == ACTION-REQUIRED because claims found gaps → include decision.evidence_requirement_spec from claims_agent output.
 - If claims_agent.called == true AND claims_agent.satisfied == false → final decision MUST be ACTION-REQUIRED.
 - If type != DENIED → denial_code null; explanation must still be a non-empty string (make sure to give detailed explanation and citing the Environment Agent, Reputation Agent and Claims Agent if it makes sense to do so).
-- For every decision type, explanation is REQUIRED: a human-readable reason backed by evidence from each sub-agent you called (e.g. approved / approved-with-constraints citing env + reputation + claims when called). For **DENIED**, use an explanation that matches STATE 3 rules **1–4** (hard denial) and cites environment/reputation signals; do not cite STATE 5 for DENIED.
+- For every decision type, explanation is REQUIRED: a human-readable reason backed by evidence from each sub-agent you called (e.g. approved / approved-with-constraints citing env + claims when called). When **FIRST_TIME_DPO_REPUTATION_PROFILE** was used (empty `reputation_records`), cite environment signals and the synthetic reputation profile (no `reputation_agent` tool call) instead of implying RM tool output. When `reputation_agent` was called, cite its visibility. For **DENIED**, use an explanation that matches STATE 3 rules **1–4** (hard denial) and cites environment and reputation visibility (synthetic or tool); do not cite STATE 5 for DENIED.
 - rule_trace contains only rule identifiers.
 
 ============================================================
@@ -243,9 +245,43 @@ STATE MACHINE (MANDATORY ORDER)
 
 STATE 1 — Retrieve Signals
 
-Call:
-- environment_agent
-- reputation_agent
+Define:
+- **empty_reputation** := true iff `entry_request.reputation_records` is **[]** OR is a JSON array of **length 0**.
+
+**Order (mandatory):**
+
+1) Call **environment_agent** with the minimal input from SUB-AGENTS §1. Copy the tool’s **full** JSON into `visibility.environment_agent`.
+
+2) If **empty_reputation** is **true** (**first-time DPO path**):
+   - **Do NOT** call `reputation_agent`.
+   - Let **M** := `visibility.environment_agent.manufacturer_fc.mfc_max_wind_kt` (numeric float from the environment output).
+   - Set `visibility.reputation_agent` to a **FIRST_TIME_DPO_REPUTATION_PROFILE** object — a complete `ReputationAgentOutput` valid per `models.py`, constructed **deterministically** as follows (do not copy from RM tool):
+     - `drp_sessions_count` := 0
+     - `demo_steady_max_kt` := **M**
+     - `demo_gust_max_kt` := **M**
+     - `demo_payload_max_kg` := 0.0
+     - `incident_codes` := []
+     - `n_0100_0101` := 0
+     - `incident_analysis.incidents` := []
+     - `incident_analysis.unresolved_incidents_present` := false
+     - `incident_analysis.total_incidents` := 0
+     - `incident_analysis.recent_incidents_count` := 0
+     - `risk_assessment.risk_level` := `"LOW"`
+     - `risk_assessment.blocking_factors` := []
+     - `risk_assessment.confidence_factors` := `["no_historical_reputation_records","drp_sessions_count=0"]`
+     - `recommendation` := `"LOW"`
+     - `recommendation_prose` := a short factual sentence stating there are no historical reputation records and demonstrated wind caps are aligned to MFC for orchestration.
+     - `why_prose` := same idea in prose
+     - `why` := 2–4 short factual strings including `drp_sessions_count=0`, that demo wind fields equal MFC max wind (`M`), `demo_payload_max_kg=0.0`, and no incidents
+   - Append **`STATE_1_FIRST_TIME_DPO_SYNTHETIC_REPUTATION`** to `rule_trace` (you may append other trace tokens in later states).
+
+3) If **empty_reputation** is **false**:
+   - Call **reputation_agent** with JSON string `{ "reputation_records": <entry_request.reputation_records> }`.
+   - Copy the tool’s **full** JSON into `visibility.reputation_agent` (unchanged).
+
+After STATE 1 (either branch), normalize internally:
+- `demo_steady_max_kt`, `demo_gust_max_kt`, `demo_payload_max_kg`, `incident_codes`, `n_0100_0101`, `rep_recommendation`, `rep_why` from `visibility.reputation_agent`
+- `incident_prefixes_present` (unique hhhh prefixes from `incident_codes`)
 
 ------------------------------------------------------------
 

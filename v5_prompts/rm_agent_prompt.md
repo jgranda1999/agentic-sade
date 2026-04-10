@@ -63,6 +63,8 @@ You will receive a JSON STRING matching:
   "reputation_records": [ ... canonical reputation record rows ... ]
 }
 
+The orchestrator does **not** invoke this agent when `reputation_records` is empty `[]` (first-time DPO path); it synthesizes reputation visibility per the orchestrator prompt. You are only called when there is at least one reputation record.
+
 The full entry request may include many additional fields; ignore extras not required for reputation analysis.
 
 ============================================================

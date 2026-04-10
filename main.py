@@ -194,7 +194,8 @@ orchestrator_agent = Agent(
                 "Analyze provided historical reputation_records for the current DPO context. "
                 "Input: JSON string with exactly the ReputationAgentInput subset: reputation_records. "
                 "Do not pass the full entry request and do not include unrelated blocks (attestation_claims, weather_forecast, uav_model, pilot, uav, zone, entry_request_history). "
-                "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, incident_codes, and n_0100_0101."
+                "Returns: ReputationAgentOutput (validated Pydantic model) with incident_analysis, risk_assessment, demo_steady_max_kt, demo_gust_max_kt, demo_payload_max_kg, incident_codes, and n_0100_0101. "
+                "If entry_request.reputation_records is missing or empty [], do NOT call this tool; the orchestrator prompt STATE 1 builds FIRST_TIME_DPO_REPUTATION_PROFILE from environment_agent MFC instead."
             ),
         ),
         claims_agent.as_tool(
@@ -239,6 +240,8 @@ def format_entry_request(request: Dict[str, Any]) -> str:
         f"Requested Exit Time: {request.get('requested_exit_time', 'MISSING')}",
         f"Request Type (derived): {request_type}",
     ]
+    rep = request.get("reputation_records")
+    rep_empty = rep is None or (isinstance(rep, list) and len(rep) == 0)
     lines.extend(
         [
             "",
@@ -250,6 +253,11 @@ def format_entry_request(request: Dict[str, Any]) -> str:
             f"- entry_request_history: {len(request.get('entry_request_history', []))}",
         ]
     )
+    if rep_empty:
+        lines.append(
+            "\nNote: reputation_records is empty — use orchestrator STATE 1 first-time DPO path "
+            "(environment_agent only for signals; synthesize FIRST_TIME_DPO_REPUTATION_PROFILE; do not call reputation_agent)."
+        )
     
     # Include safecert_pin if provided (for ACTION-REQUIRED re-evaluation)
     if 'safecert_pin' in request:
@@ -301,8 +309,9 @@ async def process_entry_request(
     """
     Process an entry request through the SADE Orchestrator Agent (single run).
 
-    The v2 orchestrator runs until it emits a final JSON (calling env, reputation,
-    and claims_agent as needed in one run). Contract violations are fail-fast.
+    The v2 orchestrator runs until it emits a final JSON (calling environment_agent;
+    reputation_agent only when reputation_records is non-empty; claims_agent when
+    STATE 3 ends ACTION-REQUIRED). Contract violations are fail-fast.
     Only transient OpenAI transport errors are retried.
 
     Args:
