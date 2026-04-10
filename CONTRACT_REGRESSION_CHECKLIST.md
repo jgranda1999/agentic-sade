@@ -57,6 +57,7 @@ Validate:
 - Decision JSON parses and includes `decision` + `visibility`
 - No schema/guardrail errors around claims:
   - `ACTION-REQUIRED` cannot finalize with `claims_agent.called=false` (except STATE 0/1 early actions)
+  - `ACTION-REQUIRED` from **PART_107** missing (STATE 3b) must follow the same path: `claims_agent.called=true`, evidence spec when unsatisfied
   - if claims returns spec, decision echoes same spec
   - claims `satisfied=true` must not pair with non-empty spec (orchestrator validation rejects)
 

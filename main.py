@@ -164,7 +164,8 @@ claims_agent = Agent(
     instructions=CLAIMS_AGENT_PROMPT,
     output_type=ClaimsAgentOutput,
     handoff_description=(
-        "Verifies required_actions against attestation_claims and incident context. "
+        "Verifies required_actions against attestation_claims and incident context "
+        "(including PART_107_VERIFICATION when present). "
         "When satisfied is false, must return non-empty evidence_requirement_spec. "
         "Input includes wind_context and payload_context per ClaimsAgentInput."
     ),
@@ -204,7 +205,7 @@ orchestrator_agent = Agent(
                 "Do not pass the full entry request and do not include unrelated blocks (reputation_records, weather_forecast, uav_model, zone, entry_request_history). "
                 "Returns: ClaimsAgentOutput with satisfied, resolved/unresolved incident prefixes, satisfied/unsatisfied actions, "
                 "evidence_requirement_spec (required non-empty categories when satisfied=false), and why. "
-                "Call when STATE 3 ends with ACTION-REQUIRED; orchestrator completes STATE 5 before final JSON."
+                "Call when STATE 3 ends with ACTION-REQUIRED (rules 5–8 or PART_107 STATE 3b gate); orchestrator completes STATE 5 (including 5.3b Rule 7 preservation when applicable) before final JSON."
             ),
         ),
     ],

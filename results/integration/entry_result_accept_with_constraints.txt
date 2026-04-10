@@ -4,7 +4,7 @@ FINAL DECISION
 Type: APPROVED-CONSTRAINTS
 SADE Message: APPROVED-CONSTRAINTS,(SPEED_LIMIT(7m/s),MAX_ALTITUDE(30m),PAYLOAD_MARGIN_CAUTION)
 Constraints: ['SPEED_LIMIT(7m/s)', 'MAX_ALTITUDE(30m)', 'PAYLOAD_MARGIN_CAUTION']
-Explanation: Approved with constraints: Environment signals show forecast wind 5.0 kt and gust 7.0 kt, below the manufacturer max wind 12.2 kt, and payload 1.85 kg is below the manufacturer max payload 2.268 kg; however payload is near the computed payload capability cap (payload_ratio≈0.816), triggering near-payload precautions. Reputation signals indicated an unresolved high-severity incident (0011-010), which required claims verification; Claims verified the required high-severity incident resolution action as satisfied and reported no unresolved incident prefixes or unsatisfied actions. Because near_payload_limit is true, constraints are applied.
+Explanation: Approved with constraints: Environment signals show wind 5.0 kt and gust 7.0 kt, both below the DJI Mavic 3 manufacturer max wind of 12.2 kt, and payload 1.85 kg is below the manufacturer max payload of 2.268 kg (environment_agent). Reputation indicated an unresolved high-severity incident (0011-010), which triggered claims review; claims_agent verified the required follow-up/mitigation evidence and marked the high-severity incident prefix (0011) resolved with all required actions satisfied. With claims satisfied, constraints are applied because payload is near the operational payload envelope (payload 1.85 kg is ~81.6% of the 2.268 kg cap), so a conservative speed/altitude limit and payload margin caution are imposed.
 ======================================================================
 
 Full output (decision + visibility):
@@ -21,7 +21,7 @@ Full output (decision + visibility):
     "actions": [],
     "evidence_requirement_spec": null,
     "denial_code": null,
-    "explanation": "Approved with constraints: Environment signals show forecast wind 5.0 kt and gust 7.0 kt, below the manufacturer max wind 12.2 kt, and payload 1.85 kg is below the manufacturer max payload 2.268 kg; however payload is near the computed payload capability cap (payload_ratio\u22480.816), triggering near-payload precautions. Reputation signals indicated an unresolved high-severity incident (0011-010), which required claims verification; Claims verified the required high-severity incident resolution action as satisfied and reported no unresolved incident prefixes or unsatisfied actions. Because near_payload_limit is true, constraints are applied."
+    "explanation": "Approved with constraints: Environment signals show wind 5.0 kt and gust 7.0 kt, both below the DJI Mavic 3 manufacturer max wind of 12.2 kt, and payload 1.85 kg is below the manufacturer max payload of 2.268 kg (environment_agent). Reputation indicated an unresolved high-severity incident (0011-010), which triggered claims review; claims_agent verified the required follow-up/mitigation evidence and marked the high-severity incident prefix (0011) resolved with all required actions satisfied. With claims satisfied, constraints are applied because payload is near the operational payload envelope (payload 1.85 kg is ~81.6% of the 2.268 kg cap), so a conservative speed/altitude limit and payload margin caution are imposed."
   },
   "visibility": {
     "environment_agent": {
@@ -45,38 +45,32 @@ Full output (decision + visibility):
         }
       },
       "risk_assessment": {
-        "risk_level": "MEDIUM",
+        "risk_level": "LOW",
         "blocking_factors": [],
-        "marginal_factors": [
-          "near_mfc_max_payload_limit"
-        ]
+        "marginal_factors": []
       },
       "constraint_suggestions_wind": [],
-      "constraint_suggestions_payload": [
-        "PAYLOAD_LIMIT(1.80kg)"
-      ],
+      "constraint_suggestions_payload": [],
       "recommendation_wind": "LOW",
-      "recommendation_payload": "MEDIUM",
-      "recommendation_prose_wind": "Wind conditions are well below the manufacturer maximum wind tolerance.",
-      "recommendation_prose_payload": "Requested payload is within the manufacturer maximum but with limited remaining margin.",
-      "why_prose_wind": "Forecast wind/gust are below MFC max wind; no near-limit or variability thresholds triggered.",
-      "why_prose_payload": "Payload is below MFC max payload but within the near-limit margin threshold.",
+      "recommendation_payload": "LOW",
+      "recommendation_prose_wind": "",
+      "recommendation_prose_payload": "",
+      "why_prose_wind": "",
+      "why_prose_payload": "",
       "why_wind": [
         "wind_kt=5.0",
         "wind_gust_kt=7.0",
         "mfc_max_wind_kt=12.2",
-        "gust_delta_kt=2.0",
-        "moderate_delta_threshold_kt=3.0",
-        "severe_delta_threshold_kt=6.0",
-        "wind_risk_level=LOW"
+        "gust_delta_kt=2.0 (wind_gust - wind)",
+        "moderate_delta_threshold_kt=3.0; severe_delta_threshold_kt=6.0",
+        "wind_gust_kt (7.0) < mfc_max_wind_kt (12.2)"
       ],
       "why_payload": [
         "payload_kg=1.85",
         "mfc_payload_max_kg=2.268",
-        "payload_ratio=0.816",
+        "payload_ratio=0.816 (payload/mfc_payload_max_kg)",
         "near_payload_threshold_kg=0.5",
-        "mfc_payload_max_minus_payload_kg=0.418",
-        "payload_risk_level=MEDIUM"
+        "payload_kg (1.85) <= mfc_payload_max_kg (2.268)"
       ]
     },
     "reputation_agent": {
@@ -113,17 +107,17 @@ Full output (decision + visibility):
         "0011-010"
       ],
       "n_0100_0101": 0,
-      "recommendation_prose": "Historical risk signal: HIGH based on incident history derived from reputation_records (unresolved high-severity incident present).",
+      "recommendation_prose": "Historical risk signal: HIGH, driven by an unresolved high-severity incident in prior sessions. Wind/payload figures reflect demonstrated maxima across recorded sessions only.",
       "recommendation": "HIGH",
-      "why_prose": "drp_sessions_count=5; demo_steady_max_kt=12.0; demo_gust_max_kt=15.0; demo_payload_max_kg=11.2; total_incidents=1; unresolved_incidents_present=true; recent_incidents_count=0; n_0100_0101=0.",
+      "why_prose": "Computed from reputation_records: drp_sessions_count=5; demo_steady_max_kt=12.0; demo_gust_max_kt=15.0; demo_payload_max_kg=11.2; total_incidents=1; unresolved_incidents_present=true; recent_incidents_count=0; n_0100_0101=0.",
       "why": [
         "drp_sessions_count=5",
         "demo_steady_max_kt=12.0",
         "demo_gust_max_kt=15.0",
         "demo_payload_max_kg=11.2",
-        "total_incidents=1",
+        "total_incidents=1 (incident_codes=['0011-010'])",
         "unresolved_incidents_present=true",
-        "recent_incidents_count=0",
+        "recent_incidents_count=0 (within last 30 days)",
         "n_0100_0101=0"
       ]
     },
@@ -139,17 +133,17 @@ Full output (decision + visibility):
       ],
       "unsatisfied_actions": [],
       "evidence_requirement_spec": null,
-      "recommendation_prose": "All required actions have been verified as satisfied. The listed high-severity incident (0011-010) has a verified follow-up/mitigation artifact on file, so there are no outstanding high-severity incident resolution items for this request.",
-      "why_prose": "RESOLVE_HIGH_SEVERITY_INCIDENTS is satisfied because the only high-severity incident provided (0011-010; prefix 0011) has verified follow-up evidence in attestation_claims, which counts as addressed under the incident resolution check.",
+      "recommendation_prose": "All required actions are satisfied. The high-severity incident 0011-010 has a verified follow-up/mitigation record on file, so no additional remediation evidence is required for this request.",
+      "why_prose": "The only required action was to resolve high-severity incidents. Incident 0011-010 (prefix 0011) has a SATISFIED follow-up report attestation, which meets the follow-up/mitigation verification check for this action.",
       "why": [
         "required_actions includes RESOLVE_HIGH_SEVERITY_INCIDENTS",
-        "incident_codes includes 0011-010 (high severity prefix 0011)",
-        "verified FOLLOWUP_REPORT found for incident_code=0011-010 (attestation req-followup-0011-010), which satisfies the follow-up/mitigation requirement for high-severity incident resolution",
-        "no other incident_codes were provided for this request"
+        "incident_codes includes 0011-010 (high-severity prefix 0011)",
+        "verified follow-up/mitigation evidence found: FOLLOWUP_REPORT(incident_code=0011-010) status=SATISFIED"
       ]
     },
     "rule_trace": [
       "STATE_3_RULE_HIGH_SEV_INCIDENT",
+      "STATE_3_RULE_PART_107_ON_FILE",
       "STATE_5_RULE_CLAIMS_SATISFIED_NEAR_ENVELOPE"
     ]
   }
